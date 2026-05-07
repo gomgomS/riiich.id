@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Our Story - Renrich Coffee{% endblock %}
+
+{% block content %}
+    <!-- Page Heading -->
+    <div class="py-16 md:py-24 bg-renrich-dark bg-opacity-90 bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=2000');">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-playfair font-bold text-white mb-4">Our Story</h1>
+            <p class="text-renrich-gold text-lg font-medium tracking-widest uppercase">The Journey of Renrich</p>
+        </div>
+    </div>
+
+    <!-- Company Profile -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl font-playfair font-bold text-renrich-dark text-center mb-16">Renrich Coffee</h2>
+            <div class="flex flex-col lg:flex-row items-center gap-12">
+                <div class="lg:w-1/2 text-lg text-gray-700 space-y-6">
+                    <p><span class="font-bold text-renrich-dark">Renrich Coffee</span> lahir dari sebuah kecintaan mendalam terhadap kopi nusantara. Kami percaya bahwa setiap biji kopi memiliki cerita, dan tugas kami adalah menyampaikan cerita tersebut dengan sempurna ke dalam cangkir Anda.</p>
+                    <p>Berdiri dengan konsep premium roastery, kami menyeleksi biji kopi terbaik dari para petani lokal. Dengan teknik pemanggangan yang teliti dan tangan-tangan terampil barista kami, setiap tegukan yang Anda nikmati merupakan mahakarya rasa yang otentik dan elegan.</p>
+                    <p>Lebih dari sekadar tempat ngopi, Renrich hadir sebagai ruang di mana koneksi terjalin, ide-ide lahir, dan momen-momen berharga dirayakan di tengah suasana yang hangat dan estetik.</p>
+                </div>
+                <div class="lg:w-1/2 text-center relative">
+                    <img src="{{ url_for('static', filename='assets/img/logo_renrich.jpg') }}" alt="Renrich Logo" class="mx-auto w-64 md:w-80 rounded-2xl shadow-xl border-4 border-renrich-gold">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project Highlight -->
+    <section class="py-20 bg-renrich-cream" style="background-color: #E6E2DD;">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl font-playfair font-bold text-renrich-dark mb-12 text-center md:text-left">THE ART OF ROASTING</h2>
+            <div class="flex flex-col lg:flex-row items-center gap-12">
+                <div class="lg:w-1/2">
+                    <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=1000" alt="Coffee Roasting" class="rounded-2xl shadow-xl w-full">
+                </div>
+                <div class="lg:w-1/2 text-lg text-gray-700 leading-relaxed">
+                    <p>Komitmen kami adalah kualitas. <span class="font-bold text-renrich-dark">House blend kami</span> diracik secara presisi untuk menciptakan profil rasa yang seimbang, aroma yang memikat, dan body yang kaya. Kami memastikan proses dari biji hingga menjadi secangkir kopi dilakukan dengan standar tertinggi untuk pengalaman yang tak terlupakan.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-20 bg-white text-center border-t border-gray-100">
+        <div class="max-w-3xl mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-playfair font-bold text-renrich-dark mb-6">Taste The Excellence Today</h2>
+            <p class="text-gray-500 mb-8 text-lg">Kunjungi outlet kami dan biarkan barista kami meracik minuman favorit Anda.</p>
+            <a href="{{ data.whatsapp_url }}" class="text-white inline-block bg-renrich-dark hover:bg-renrich-brown border border-renrich-gold text-lg font-semibold px-8 py-4 rounded-full shadow-lg transition duration-300" target="_blank">
+                Hubungi Kami
+            </a>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Renrich</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2/admin.output.css') }}">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-gray-100">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-xl flex flex-col h-full hidden md:flex z-20">
+        <div class="h-16 flex items-center justify-center border-b border-gray-100">
+            <span class="text-2xl font-bold text-[#033187] tracking-wider font-playfair">RENRICH</span>
+        </div>
+        <div class="p-4 flex-1">
+            <ul class="space-y-2">
+                <li>
+                    <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 bg-[#033187] text-white rounded-lg font-medium shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/operations" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        Live Operations
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/floor_designer" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+                        Floor Designer
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="p-4 border-t border-gray-100">
+            <a href="/admin/logout" class="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg font-medium transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full relative">
+        <!-- Top Header -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+            <div class="flex items-center">
+                <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-[#033187] text-white flex items-center justify-center font-bold text-sm">
+                        {{ admin_name[0]|upper if admin_name else 'A' }}
+                    </div>
+                    <span class="text-sm font-medium text-gray-700">{{ admin_name }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="p-8 flex-1 overflow-y-auto">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center max-w-2xl mx-auto mt-10">
+                <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-[#033187]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome to Renrich Portal</h2>
+                <p class="text-gray-500 mb-8">Manage your live operations, orders, and restaurant layout from the sidebar navigation.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="/admin/operations" class="block p-6 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-200 border border-transparent transition text-left group">
+                        <h3 class="font-bold text-gray-800 group-hover:text-[#033187] mb-1">Live Operations &rarr;</h3>
+                        <p class="text-sm text-gray-500">Monitor incoming orders, reservations, and queue.</p>
+                    </a>
+                    <a href="/admin/floor_designer" class="block p-6 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-200 border border-transparent transition text-left group">
+                        <h3 class="font-bold text-gray-800 group-hover:text-[#033187] mb-1">Floor Designer &rarr;</h3>
+                        <p class="text-sm text-gray-500">Design your cafe layout and table seating visually.</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

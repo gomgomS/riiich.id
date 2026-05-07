@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Floor Plan Designer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2/admin.output.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; margin: 0; overflow: hidden; }
+        .toolbar { width: 250px; background: white; height: 100vh; border-right: 1px solid #e5e7eb; padding: 20px; overflow-y: auto; }
+        .canvas-container { flex-grow: 1; height: 100vh; position: relative; background-image: radial-gradient(#d1d5db 1px, transparent 1px); background-size: 20px 20px; background-color: #ffffff; overflow: auto; }
+        svg { width: 2000px; height: 2000px; display: block; cursor: crosshair; }
+        
+        .tool-btn { display: block; width: 100%; text-align: left; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; transition: all 0.2s; }
+        .tool-btn:hover { background: #f3f4f6; }
+        .tool-btn.active { background: #033187; color: white; border-color: #033187; }
+        
+        /* Table Styles */
+        .table-node { cursor: grab; transition: stroke 0.2s; }
+        .table-node:active { cursor: grabbing; }
+        .table-selected { stroke: #02308E; stroke-width: 3px; stroke-dasharray: 5,5; }
+        
+        /* Architectural Lines */
+        .arch-line { cursor: pointer; }
+        .arch-line-selected { stroke: red !important; stroke-width: 4px !important; }
+        
+        .prop-group { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+        .prop-group label { display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 5px; }
+        .prop-group input, .prop-group select { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
+        
+        #save-btn { background: #10b981; color: white; border: none; font-weight: bold; width: 100%; padding: 12px; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+        #save-btn:hover { background: #059669; }
+    </style>
+</head>
+<body class="flex">
+
+    <!-- Sidebar Toolbar -->
+    <div class="toolbar shadow-xl z-10 flex flex-col">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">Floor Designer</h2>
+        
+        <div class="mb-4">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tools</h3>
+            <button class="tool-btn active" id="tool-select">Pointer (Select/Move)</button>
+            <button class="tool-btn" id="tool-draw-line">Draw Wall / Bar</button>
+            <button class="tool-btn" id="tool-add-table">Add Table</button>
+        </div>
+        
+        <!-- Properties Panel (Hidden by default, shows when an element is selected) -->
+        <div id="properties-panel" class="prop-group hidden">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Properties</h3>
+            
+            <div id="prop-table" class="hidden">
+                <label>Table ID (Unique Code, e.g. T1, T2)</label>
+                <input type="text" id="prop-table-id" readonly style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;">
+
+                <label>Table Name (shown to users, boleh pakai spasi)</label>
+                <input type="text" id="prop-table-name" placeholder="contoh: Kursi 2, VIP Indoor">
+                
+                <label>Seats Capacity</label>
+                <input type="number" id="prop-table-seats" min="1" max="20">
+                
+                <label>Radius / Size</label>
+                <input type="number" id="prop-table-size" min="10" max="200">
+                
+                <button id="btn-delete-element" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Table</button>
+            </div>
+            
+            <div id="prop-line" class="hidden">
+                <label>Stroke Width</label>
+                <input type="number" id="prop-line-width" min="1" max="20">
+                
+                <label>Stroke Color</label>
+                <input type="color" id="prop-line-color">
+                
+                <label>Dash Array (e.g. "5,5")</label>
+                <input type="text" id="prop-line-dash">
+                
+                <button id="btn-delete-line" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Line</button>
+            </div>
+        </div>
+        
+        <div class="mt-auto">
+            <button id="save-btn">Save Floor Plan</button>
+            <a href="/admin/dashboard" class="block text-center mt-3 text-sm text-gray-500 hover:text-gray-800">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="canvas-container" id="canvas-wrapper">
+        <svg id="designer-canvas" xmlns="http://www.w3.org/2000/svg">
+            <!-- Grid definitions can go here -->
+            <g id="lines-layer"></g>
+            <g id="tables-layer"></g>
+        </svg>
+    </div>
+
+    <!-- Save Confirmation Modal -->
+    <div id="save-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+        <div class="w-full max-w-md rounded-xl bg-white shadow-2xl">
+            <div class="border-b border-gray-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-gray-900">Confirm Save Floor Plan</h3>
+            </div>
+            <div class="px-6 py-5">
+                <p class="text-sm text-gray-700">
+                    Attention: Saving now will reset reservation seats to Available. Are you sure?
+                </p>
+            </div>
+            <div class="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+                <button id="cancel-save-modal-btn" type="button" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+                    Cancel
+                </button>
+                <button id="confirm-save-modal-btn" type="button" class="rounded-lg bg-[#033187] px-4 py-2 text-sm font-semibold text-white hover:bg-[#02308E]">
+                    Yes, Save Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const svgns = "http://www.w3.org/2000/svg";
+        let currentTool = 'select'; // 'select', 'draw-line', 'add-table'
+        let selectedElement = null;
+        
+        // Drawing Line State
+        let isDrawing = false;
+        let currentLine = null;
+        
+        // Dragging State
+        let isDragging = false;
+        let dragTarget = null;
+        let offset = { x: 0, y: 0 };
+        
+        // Element Tracking
+        let elements = {
+            lines: [],
+            tables: []
+        };
+
+        $(document).ready(function() {
+            // Load existing plan
+            $.get("/admin/api/floor_plan", function(res) {
+                if(res.ok && res.data) {
+                    elements = res.data;
+                    // Backward compatibility: old data may only have "label".
+                    (elements.tables || []).forEach(function(table) {
+                        if (!table.table_name) {
+                            table.table_name = table.label || '';
+                        }
+                    });
+                    renderCanvas();
+                }
+            });
+
+            // Tool Selection
+            $('.tool-btn').click(function() {
+                $('.tool-btn').removeClass('active');
+                $(this).addClass('active');
+                currentTool = $(this).attr('id').replace('tool-', '');
+                deselectAll();
+                
+                if (currentTool === 'draw-line') {
+                    $('#designer-canvas').css('cursor', 'crosshair');
+                } else if (currentTool === 'add-table') {
+                    $('#designer-canvas').css('cursor', 'copy');
+                } else {
+                    $('#designer-canvas').css('cursor', 'default');
+                }
+            });
+
+            // SVG Interaction
+            const svgElement = document.getElementById('designer-canvas');
+            
+            function getMousePosition(evt) {
+                var CTM = svgElement.getScreenCTM();
+                return {
+                    x: (evt.clientX - CTM.e) / CTM.a,
+                    y: (evt.clientY - CTM.f) / CTM.d
+                };
+            }
+
+            $(svgElement).mousedown(function(e) {
+                const pos = getMousePosition(e);
+                
+                if (currentTool === 'draw-line') {
+                    isDrawing = true;
+                    const lineId = 'line_' + Date.now();
+                    const line = {
+                        id: lineId,
+                        x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y,
+                        stroke: '#4b5563', width: 4, dash: ''
+                    };
+                    elements.lines.push(line);
+                    currentLine = line;
+                    renderCanvas();
+                } else if (currentTool === 'add-table') {
+                    const tableId = 'T' + (elements.tables.length + 1);
+                    const table = {
+                        id: tableId, label: tableId, table_name: '', seats: 2,
+                        cx: pos.x, cy: pos.y, r: 25
+                    };
+                    elements.tables.push(table);
+                    renderCanvas();
+                    selectElement(table, 'table');
+                    
+                    // Switch back to select tool after dropping a table
+                    $('#tool-select').click();
+                } else if (currentTool === 'select') {
+                    // Handled by elements' own event listeners
+                }
+            });
+
+            $(svgElement).mousemove(function(e) {
+                const pos = getMousePosition(e);
+                
+                if (isDrawing && currentLine) {
+                    currentLine.x2 = pos.x;
+                    currentLine.y2 = pos.y;
+                    updateLineNode(currentLine);
+                } else if (isDragging && dragTarget) {
+                    dragTarget.cx = pos.x - offset.x;
+                    dragTarget.cy = pos.y - offset.y;
+                    updateTableNode(dragTarget);
+                }
+            });
+
+            $(window).mouseup(function() {
+                if (isDrawing) {
+                    isDrawing = false;
+                    currentLine = null;
+                }
+                if (isDragging) {
+                    isDragging = false;
+                    dragTarget = null;
+                }
+            });
+
+            // Save properties on input change
+            $('#prop-table input').on('input', function() {
+                if(selectedElement && selectedElement.type === 'table') {
+                    const tableName = $('#prop-table-name').val() || '';
+                    selectedElement.data.label = selectedElement.data.id; // keep legacy key synced to ID
+                    selectedElement.data.table_name = tableName;
+                    selectedElement.data.seats = parseInt($('#prop-table-seats').val());
+                    selectedElement.data.r = parseInt($('#prop-table-size').val());
+                    renderCanvas();
+                    selectElement(selectedElement.data, 'table');
+                }
+            });
+
+            $('#prop-line input').on('input', function() {
+                if(selectedElement && selectedElement.type === 'line') {
+                    selectedElement.data.width = parseInt($('#prop-line-width').val());
+                    selectedElement.data.stroke = $('#prop-line-color').val();
+                    selectedElement.data.dash = $('#prop-line-dash').val();
+                    updateLineNode(selectedElement.data);
+                }
+            });
+
+            $('#btn-delete-element, #btn-delete-line').click(function() {
+                if(selectedElement) {
+                    if(selectedElement.type === 'table') {
+                        elements.tables = elements.tables.filter(t => t.id !== selectedElement.data.id);
+                    } else if(selectedElement.type === 'line') {
+                        elements.lines = elements.lines.filter(l => l.id !== selectedElement.data.id);
+                    }
+                    deselectAll();
+                    renderCanvas();
+                }
+            });
+
+            // Save to server
+            $('#save-btn').click(function() {
+                $('#save-confirm-modal').removeClass('hidden').addClass('flex');
+            });
+
+            $('#cancel-save-modal-btn').click(function() {
+                $('#save-confirm-modal').addClass('hidden').removeClass('flex');
+            });
+
+            $('#save-confirm-modal').click(function(e) {
+                if (e.target.id === 'save-confirm-modal') {
+                    $('#save-confirm-modal').addClass('hidden').removeClass('flex');
+                }
+            });
+
+            $('#confirm-save-modal-btn').click(function() {
+                $('#save-confirm-modal').addClass('hidden').removeClass('flex');
+
+                const btn = $('#save-btn');
+                btn.text('Saving...').prop('disabled', true);
+                
+                $.ajax({
+                    url: '/admin/api/floor_plan/save',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(elements),
+                    success: function(res) {
+                        if(res.ok) {
+                            alert('Floor plan saved successfully!');
+                        } else {
+                            alert('Error: ' + res.msg);
+                        }
+                    },
+                    error: function() {
+                        alert('Server error.');
+                    },
+                    complete: function() {
+                        btn.text('Save Floor Plan').prop('disabled', false);
+                    }
+                });
+            });
+
+            // Rendering Logic
+            function renderCanvas() {
+                const linesLayer = document.getElementById('lines-layer');
+                const tablesLayer = document.getElementById('tables-layer');
+                linesLayer.innerHTML = '';
+                tablesLayer.innerHTML = '';
+
+                elements.lines.forEach(line => {
+                    const lineNode = document.createElementNS(svgns, 'line');
+                    lineNode.setAttribute('id', line.id);
+                    lineNode.setAttribute('class', 'arch-line');
+                    updateLineNodeData(lineNode, line);
+                    
+                    $(lineNode).mousedown(function(e) {
+                        if(currentTool === 'select') {
+                            e.stopPropagation();
+                            selectElement(line, 'line');
+                        }
+                    });
+                    
+                    linesLayer.appendChild(lineNode);
+                });
+
+                elements.tables.forEach(table => {
+                    const g = document.createElementNS(svgns, 'g');
+                    g.setAttribute('id', table.id);
+                    g.setAttribute('class', 'table-node');
+                    g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
+                    
+                    const circle = document.createElementNS(svgns, 'circle');
+                    circle.setAttribute('r', table.r);
+                    circle.setAttribute('fill', '#E6E2DD'); // Cream
+                    circle.setAttribute('stroke', '#033187'); // Dark Blue
+                    circle.setAttribute('stroke-width', '2');
+                    
+                    const text = document.createElementNS(svgns, 'text');
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dominant-baseline', 'central');
+                    text.setAttribute('fill', '#033187');
+                    text.setAttribute('font-size', '12px');
+                    text.setAttribute('font-weight', 'bold');
+                    const displayName = (table.table_name || '').trim() || table.id;
+                    text.textContent = displayName;
+                    
+                    const subtext = document.createElementNS(svgns, 'text');
+                    subtext.setAttribute('text-anchor', 'middle');
+                    subtext.setAttribute('dominant-baseline', 'central');
+                    subtext.setAttribute('fill', '#4b5563');
+                    subtext.setAttribute('font-size', '10px');
+                    subtext.setAttribute('y', '15');
+                    subtext.textContent = `(${table.seats} pax)`;
+
+                    g.appendChild(circle);
+                    g.appendChild(text);
+                    g.appendChild(subtext);
+                    
+                    $(g).mousedown(function(e) {
+                        if(currentTool === 'select') {
+                            e.stopPropagation();
+                            selectElement(table, 'table');
+                            
+                            // Start dragging
+                            isDragging = true;
+                            dragTarget = table;
+                            const pos = getMousePosition(e);
+                            offset.x = pos.x - table.cx;
+                            offset.y = pos.y - table.cy;
+                        }
+                    });
+                    
+                    tablesLayer.appendChild(g);
+                });
+                
+                // Re-apply selection visuals if something is selected
+                if(selectedElement) {
+                    if(selectedElement.type === 'table') {
+                        $(`#${selectedElement.data.id} circle`).addClass('table-selected');
+                    } else {
+                        $(`#${selectedElement.data.id}`).addClass('arch-line-selected');
+                    }
+                }
+            }
+
+            function updateLineNode(line) {
+                const node = document.getElementById(line.id);
+                if(node) updateLineNodeData(node, line);
+            }
+            
+            function updateLineNodeData(node, line) {
+                node.setAttribute('x1', line.x1);
+                node.setAttribute('y1', line.y1);
+                node.setAttribute('x2', line.x2);
+                node.setAttribute('y2', line.y2);
+                node.setAttribute('stroke', line.stroke);
+                node.setAttribute('stroke-width', line.width);
+                if(line.dash) node.setAttribute('stroke-dasharray', line.dash);
+                else node.removeAttribute('stroke-dasharray');
+            }
+
+            function updateTableNode(table) {
+                const g = document.getElementById(table.id);
+                if(g) {
+                    g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
+                    $(g).find('circle').attr('r', table.r);
+                    const displayName = (table.table_name || '').trim() || table.id;
+                    $(g).find('text').eq(0).text(displayName);
+                    $(g).find('text').eq(1).text(`(${table.seats} pax)`).attr('y', table.r * 0.6);
+                }
+            }
+
+            function selectElement(data, type) {
+                deselectAll();
+                selectedElement = { type, data };
+                
+                $('#properties-panel').removeClass('hidden');
+                
+                if (type === 'table') {
+                    $(`#${data.id} circle`).addClass('table-selected');
+                    $('#prop-table').removeClass('hidden');
+                    $('#prop-line').addClass('hidden');
+                    
+                    $('#prop-table-id').val(data.id || data.label || '');
+                    $('#prop-table-name').val(data.table_name || '');
+                    $('#prop-table-seats').val(data.seats);
+                    $('#prop-table-size').val(data.r);
+                } else if (type === 'line') {
+                    $(`#${data.id}`).addClass('arch-line-selected');
+                    $('#prop-line').removeClass('hidden');
+                    $('#prop-table').addClass('hidden');
+                    
+                    $('#prop-line-width').val(data.width);
+                    $('#prop-line-color').val(data.stroke);
+                    $('#prop-line-dash').val(data.dash || '');
+                }
+            }
+
+            function deselectAll() {
+                $('.table-selected').removeClass('table-selected');
+                $('.arch-line-selected').removeClass('arch-line-selected');
+                selectedElement = null;
+                $('#properties-panel').addClass('hidden');
+            }
+            
+            $(svgElement).click(function(e) {
+                if(currentTool === 'select' && e.target === svgElement) {
+                    deselectAll();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

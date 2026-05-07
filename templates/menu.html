@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Menu - Renrich Coffee{% endblock %}
+
+{% block content %}
+    <!-- Page Heading -->
+    <div class="py-16 md:py-24 bg-renrich-dark bg-opacity-90 bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=2000');">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-playfair font-bold text-white mb-4">Our Menu</h1>
+            <p class="text-renrich-gold text-lg font-medium tracking-widest uppercase">Taste The Excellence</p>
+        </div>
+    </div>
+
+    <!-- Menu Section -->
+    <section class="py-20 bg-renrich-cream" style="background-color: #E6E2DD;">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Filters Placeholder -->
+            <div class="flex flex-wrap justify-center gap-4 mb-12">
+                <button class="px-6 py-2 rounded-full bg-renrich-dark text-renrich-gold font-medium shadow-md transition hover:bg-renrich-brown">Semua</button>
+                <button class="px-6 py-2 rounded-full bg-white text-gray-600 font-medium shadow-sm border border-gray-200 transition hover:border-renrich-gold hover:text-renrich-dark">Coffee</button>
+                <button class="px-6 py-2 rounded-full bg-white text-gray-600 font-medium shadow-sm border border-gray-200 transition hover:border-renrich-gold hover:text-renrich-dark">Non-Coffee</button>
+                <button class="px-6 py-2 rounded-full bg-white text-gray-600 font-medium shadow-sm border border-gray-200 transition hover:border-renrich-gold hover:text-renrich-dark">Pastry & Food</button>
+            </div>
+
+            <!-- Menu Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                
+                <!-- Item 1 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col bg-white">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&q=80&w=800" alt="Renrich Signature Latte" class="w-full h-full object-cover">
+                        <div class="absolute top-4 right-4 bg-renrich-dark text-renrich-gold text-xs font-bold px-3 py-1 rounded-full shadow">Bestseller</div>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Renrich Signature Latte</h4>
+                            <span class="text-xl font-bold text-renrich-gold">Rp 45k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Perpaduan sempurna antara espresso house blend kami, susu segar, dan sirup karamel buatan sendiri dengan taburan sea salt.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Renrich%20Signature%20Latte" target="_blank" class="w-full text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col bg-white">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1610889556528-9a770e32642f?auto=format&fit=crop&q=80&w=800" alt="Espresso Arabica" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Premium Espresso</h4>
+                            <span class="text-xl font-bold text-renrich-gold">Rp 30k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Ekstraksi murni dari biji kopi Arabica pilihan dengan notes cokelat hitam dan sedikit sentuhan buah berry.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Premium%20Espresso" target="_blank" class="w-full text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col bg-white">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1515823064-d6e0c04616a7?auto=format&fit=crop&q=80&w=800" alt="Matcha Fusion" class="w-full h-full object-cover">
+                        <div class="absolute top-4 right-4 bg-renrich-dark text-white text-xs font-bold px-3 py-1 rounded-full shadow">New</div>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Matcha Fusion</h4>
+                            <span class="text-xl font-bold text-renrich-gold">Rp 42k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Bubuk matcha Uji premium dari Jepang yang di-whisk sempurna, dipadukan dengan susu oat yang creamy.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Matcha%20Fusion" target="_blank" class="w-full text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 4 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col bg-white">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1558401391-7899b4bd5bbf?auto=format&fit=crop&q=80&w=800" alt="Classic Affogato" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Classic Affogato</h4>
+                            <span class="text-xl font-bold text-renrich-gold">Rp 38k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Kombinasi klasik es krim vanilla bean yang lembut disiram dengan double shot espresso panas.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Classic%20Affogato" target="_blank" class="w-full text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 5 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col bg-white">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=800" alt="Artisanal Croissant" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Butter Croissant</h4>
+                            <span class="text-xl font-bold text-renrich-gold">Rp 28k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Croissant yang dipanggang segar setiap hari dengan lapisan mentega Prancis yang renyah di luar dan lembut di dalam.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Butter%20Croissant" target="_blank" class="w-full text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 6 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col bg-white">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&q=80&w=800" alt="Iced Caramel Macchiato" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Caramel Macchiato</h4>
+                            <span class="text-xl font-bold text-renrich-gold">Rp 40k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Minuman dingin menyegarkan dengan paduan vanilla, susu, espresso layer, dan drizzle karamel di atasnya.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Caramel%20Macchiato" target="_blank" class="w-full text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+            
+        </div>
+    </section>
+{% endblock %}

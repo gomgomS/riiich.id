@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Atmosphere - Renrich Coffee{% endblock %}
+
+{% block content %}
+    <!-- Page Heading -->
+    <div class="py-16 md:py-24 bg-renrich-dark bg-opacity-90 bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1525610553991-2bede1a236e2?auto=format&fit=crop&q=80&w=2000');">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-playfair font-bold text-white mb-4">Atmosphere</h1>
+            <p class="text-renrich-gold text-lg font-medium tracking-widest uppercase">The Renrich Experience</p>
+        </div>
+    </div>
+
+    <!-- Facilities Section -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <span class="text-renrich-gold font-bold uppercase tracking-wider">Our Spaces</span>
+                <h2 class="text-3xl md:text-5xl font-playfair font-bold text-renrich-dark mt-2 mb-4">Discover Your Spot</h2>
+                <p class="text-lg text-gray-500 max-w-2xl mx-auto">Kami mendesain Renrich Coffee dengan mempertimbangkan kenyamanan Anda, baik untuk sekadar bersantai, bekerja, atau menghabiskan waktu bersama.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <!-- Facility 1 -->
+                <div class="bg-renrich-light rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition duration-300">
+                    <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=1000" alt="Indoor Cafe" class="w-full h-56 object-cover">
+                    <div class="p-8">
+                        <h4 class="text-2xl font-playfair font-bold text-renrich-dark mb-3">Cozy Indoor Lounge</h4>
+                        <p class="text-gray-600">Area dalam ruangan ber-AC dengan sofa yang nyaman, pencahayaan hangat, dan meja yang ideal untuk diskusi atau bersantai menikmati secangkir kopi panas.</p>
+                    </div>
+                </div>
+                <!-- Facility 2 -->
+                <div class="bg-renrich-light rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition duration-300">
+                    <img src="https://images.unsplash.com/photo-1508424757105-b6d5ad9329d0?auto=format&fit=crop&q=80&w=1000" alt="Outdoor Patio" class="w-full h-56 object-cover">
+                    <div class="p-8">
+                        <h4 class="text-2xl font-playfair font-bold text-renrich-dark mb-3">Alfresco Patio</h4>
+                        <p class="text-gray-600">Nikmati semilir angin di area luar ruangan kami. Sangat cocok untuk menikmati minuman dingin saat senja tiba atau bercengkerama santai bersama kolega.</p>
+                    </div>
+                </div>
+                <!-- Facility 3 -->
+                <div class="bg-renrich-light rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition duration-300">
+                    <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=1000" alt="Work Space" class="w-full h-56 object-cover">
+                    <div class="p-8">
+                        <h4 class="text-2xl font-playfair font-bold text-renrich-dark mb-3">Productivity Corner</h4>
+                        <p class="text-gray-600">Dilengkapi dengan colokan listrik di setiap meja dan Wi-Fi berkecepatan tinggi, area ini didedikasikan bagi Anda yang ingin bekerja atau belajar dengan fokus.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-20 bg-renrich-dark text-center border-t-4 border-renrich-gold">
+        <div class="max-w-3xl mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-playfair font-bold text-white mb-6">Reservasi Meja Anda</h2>
+            <p class="text-white mb-8 text-lg">Ingin memastikan tempat Anda tersedia? Hubungi kami untuk melakukan reservasi meja.</p>
+            <a href="{{ data.whatsapp_url }}" class="inline-block bg-white hover:bg-renrich-light text-renrich-dark text-lg font-bold px-8 py-4 rounded-full shadow-lg transition duration-300" target="_blank">
+                Booking via WhatsApp
+            </a>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2196F3;
+  --color-primary-hover: #1976D2;
+  --color-dark: #333333;
+  --color-light: #F5F7FA;
+  --color-wa: #25D366;
+  --font-poppins: 'Poppins', sans-serif;
+}
+
+/* Hero Slider Custom Styles */
+.hero-slider { position: relative; width: 100%; height: 80vh; overflow: hidden; }
+@media (min-width: 768px) { .hero-slider { height: 100vh; } }
+.hero-slide { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0; transition: opacity 1.2s ease; }
+.hero-slide.active { opacity: 1; z-index: 2; }
+.hero-slide img { position: absolute; width: 100%; height: 100%; object-fit: cover; transform: scale(1.05); transition: transform 8s ease; }
+.hero-slide.active img { transform: scale(1.12); }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(to right, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.2)); z-index: 2; }
+.hero-content { position: absolute; left: 8%; top: 50%; transform: translateY(-50%); color: #fff; z-index: 3; max-width: 600px; }
+.hero-subtitle { letter-spacing: 4px; font-size: 14px; margin-bottom: 15px; opacity: 0; transform: translateY(20px); }
+.hero-title { font-weight: 700; margin-bottom: 20px; opacity: 0; transform: translateY(30px); line-height: 1.1; }
+.hero-desc { font-size: 18px; color: #ccc; margin-bottom: 30px; opacity: 0; transform: translateY(30px); }
+.hero-btn { opacity: 0; transform: translateY(30px); }
+
+.hero-slide.active .hero-subtitle { opacity: 1; transform: translateY(0); transition: 0.8s ease 0.3s; }
+.hero-slide.active .hero-title { opacity: 1; transform: translateY(0); transition: 1s ease 0.6s; }
+.hero-slide.active .hero-desc { opacity: 1; transform: translateY(0); transition: 1s ease 0.9s; }
+.hero-slide.active .hero-btn { opacity: 1; transform: translateY(0); transition: 1s ease 1.2s; }
+
+.hero-nav { position: absolute; top: 50%; transform: translateY(-50%); color: #fff; font-size: 28px; cursor: pointer; z-index: 10; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
+.hero-nav:hover { background: rgba(0,0,0,0.6); }
+.hero-prev { left: 20px; }
+.hero-next { right: 20px; }
+

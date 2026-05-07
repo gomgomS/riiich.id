@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Operasional Admin - Renrich</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2/admin.output.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; }
+        .kanban-col { min-height: calc(100vh - 250px); background: #e5e7eb; border-radius: 8px; padding: 10px; }
+        .order-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid transparent; }
+        .order-card.reservation { border-left-color: #1e3a8a; }
+        .order-card.takeaway { border-left-color: #92400e; }
+        .order-card.dinein { border-left-color: #065f46; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .badge-reservation { background: #dbeafe; color: #1e3a8a; }
+        .badge-takeaway { background: #fef3c7; color: #92400e; }
+        .badge-dinein { background: #d1fae5; color: #065f46; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-gray-100">
+
+    <!-- Sidebar -->
+    <aside id="admin-sidebar" class="w-64 bg-white shadow-xl flex flex-col h-full hidden md:flex z-20">
+        <div class="h-16 flex items-center justify-center border-b border-gray-100">
+            <span class="text-2xl font-bold text-[#033187] tracking-wider font-playfair">RENRICH</span>
+        </div>
+        <div class="p-4 flex-1">
+            <ul class="space-y-2">
+                <li>
+                    <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/operations" class="flex items-center gap-3 px-4 py-3 bg-[#033187] text-white rounded-lg font-medium shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        Live Operations
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/operations/history" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4V7m3 12H6a2 2 0 01-2-2V5a2 2 0 012-2h8l6 6v8a2 2 0 01-2 2z"></path></svg>
+                        Order History
+                    </a>
+                </li>
+                <li>
+                    <a href="/admin/floor_designer" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
+                        Floor Designer
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="p-4 border-t border-gray-100">
+            <a href="/admin/logout" class="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg font-medium transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full relative">
+        <!-- Top Header -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+            <div class="flex items-center">
+                <button id="toggle-sidebar-btn" onclick="toggleSidebar()"
+                    class="mr-3 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
+                    Hide Sidebar
+                </button>
+                <h1 class="text-xl font-bold text-gray-800">Dashboard Operasional</h1>
+            </div>
+            <div class="flex items-center gap-3">
+        <!-- Tombol kosongkan semua kursi -->
+                <button onclick="resetAllTables()"
+                    style="display:inline-flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;"
+                    onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'"
+                    title="Darurat: kosongkan semua reservasi meja sekaligus">
+                    <svg style="width:14px;height:14px;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Kosongkan Semua Kursi
+                </button>
+                <div class="w-px h-6 bg-gray-200"></div>
+                <div class="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                    <span class="relative flex h-2.5 w-2.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </span>
+                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Sinkron Langsung</span>
+                </div>
+                <div class="h-8 w-px bg-gray-200"></div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-[#033187] text-white flex items-center justify-center font-bold text-sm">
+                        {{ admin_name[0]|upper if admin_name else 'A' }}
+                    </div>
+                    <span class="text-sm font-medium text-gray-700">{{ admin_name }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Reserved Tables Bar -->
+        <div id="reserved-tables-bar" style="display:none;padding:10px 24px;background:#fffbeb;border-bottom:1px solid #fcd34d;">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+                <div style="display:flex;align-items:center;gap:6px;color:#b45309;font-weight:700;font-size:13px;flex-shrink:0;">
+                    <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Kursi Masih Terpesan:
+                </div>
+                <a href="/admin/seat-map-control" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #d1d5db;color:#033187;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;text-decoration:none;">
+                    Buka Kontrol Peta Kursi
+                </a>
+                <div id="reserved-chips" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+            </div>
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="p-6 flex-1 overflow-x-auto overflow-y-hidden">
+            <div class="flex gap-6 h-full min-w-max">
+                
+                <!-- Kolom: Belum Bayar / Menunggu Verifikasi -->
+                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Verifikasi Pembayaran</h3>
+                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-unpaid">0</span>
+                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-unpaid">
+                        <!-- Cards injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Kolom: Antrean Dapur (Pending -> Preparing) -->
+                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Antrean Dapur</h3>
+                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-pending">0</span>
+                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-pending">
+                        <!-- Cards injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Kolom: Sedang Disiapkan (Siap Disajikan) -->
+                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Siap Disajikan</h3>
+                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-preparing">0</span>
+                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-preparing">
+                        <!-- Cards injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Kolom: Lepas Kursi (Tamu Sudah Pulang) -->
+                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-red-100 shadow-sm">
+                    <div class="p-4 border-b border-red-100 bg-red-50 rounded-t-xl flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-red-700 text-sm uppercase tracking-wide">Tamu Sudah Pulang</h3>
+                            <p class="text-xs text-red-400 mt-0.5">Lepas kursi agar bisa dipakai reservasi baru</p>
+                        </div>
+                        <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-served">0</span>
+                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-served">
+                        <!-- Cards injected via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="seat-change-modal" style="display:none;position:fixed;inset:0;background:rgba(17,24,39,0.45);z-index:60;align-items:center;justify-content:center;padding:16px;">
+        <div style="width:100%;max-width:480px;background:#fff;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.18);overflow:hidden;">
+            <div style="padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+                <h3 style="font-size:16px;font-weight:700;color:#111827;">Ubah Kursi</h3>
+                <button onclick="closeSeatModal()" style="background:transparent;border:none;color:#6b7280;font-size:20px;line-height:1;cursor:pointer;">&times;</button>
+            </div>
+            <div style="padding:16px;">
+                <div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Pilih meja</div>
+                <select id="seat-change-select" multiple size="8" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:14px;outline:none;background:#fff;"></select>
+                <p style="font-size:12px;color:#6b7280;margin-top:8px;">Tahan Ctrl/Cmd untuk memilih beberapa meja. Biarkan kosong jika ingin menghapus alokasi kursi.</p>
+                <p id="seat-change-error" style="display:none;font-size:12px;color:#dc2626;margin-top:8px;"></p>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px;">
+                <button onclick="closeSeatModal()" style="border:1px solid #d1d5db;background:#fff;color:#374151;font-size:13px;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;">Batal</button>
+                <button id="seat-change-save-btn" onclick="submitSeatChange()" style="border:none;background:#033187;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let orderIndex = {};
+        let floorPlanTables = [];
+        let reservedByOrder = {};
+        let tableStateMap = {};
+        let seatModalOrderId = '';
+        let autoConfirmPaymentOrderId = '';
+
+        function parseArrivalDate(value) {
+            if (!value) return null;
+            const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(value);
+            const normalized = hasTimezone ? value : `${value}+07:00`;
+            const dt = new Date(normalized);
+            if (isNaN(dt.getTime())) return null;
+            return dt;
+        }
+
+        function formatArrivalLabel(value) {
+            const arrival = parseArrivalDate(value);
+            if (!arrival) return '-';
+            return new Intl.DateTimeFormat('id-ID', {
+                timeZone: 'Asia/Jakarta',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).format(arrival).replace(/\./g, ':');
+        }
+
+        function countdownToArrival(value) {
+            const arrival = parseArrivalDate(value);
+            if (!arrival) return '-';
+
+            const now = new Date();
+            const diffMs = arrival.getTime() - now.getTime();
+            const abs = Math.abs(diffMs);
+            const totalMinutes = Math.floor(abs / 60000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const timeText = `${hours}h ${minutes}m`;
+
+            if (diffMs >= 0) {
+                return `${timeText} lagi`;
+            }
+            return `Terlambat ${timeText}`;
+        }
+
+        function getTableDisplayLabel(tableId) {
+            if (!tableId) return '';
+            const found = floorPlanTables.find(t => t.id === tableId);
+            if (!found) return tableId;
+            return (found.display_name || found.label || found.id || tableId);
+        }
+
+        function getReservedChipLabel(rec) {
+            const byFloorPlan = getTableDisplayLabel(rec.table_id || '');
+            if (byFloorPlan && byFloorPlan !== (rec.table_id || '')) return byFloorPlan;
+            if (rec.label && rec.label !== rec.table_id) return rec.label;
+            return rec.table_id || '-';
+        }
+
+        function toIdLabelFlow(v) {
+            if (v === 'Dine-In') return 'Dine-In';
+            if (v === 'Takeaway') return 'Takeaway';
+            return v || '-';
+        }
+
+        function toIdLabelPayment(v) {
+            if (v === 'Paid') return 'Lunas';
+            if (v === 'Unpaid') return 'Belum Bayar';
+            return v || '-';
+        }
+
+        function toIdLabelTiming(v) {
+            if (v === 'Serve on Arrival') return 'Siapkan segera saat tamu tiba';
+            if (v === 'Ready after Arrival') return 'Siapkan setelah tamu duduk';
+            return v || '-';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            const btn = document.getElementById('toggle-sidebar-btn');
+            if (!sidebar || !btn) return;
+
+            const isHidden = sidebar.style.display === 'none';
+            if (isHidden) {
+                sidebar.style.display = 'flex';
+                btn.textContent = 'Hide Sidebar';
+            } else {
+                sidebar.style.display = 'none';
+                btn.textContent = 'Open Sidebar';
+            }
+        }
+
+        function renderCards(orders) {
+            $('#col-unpaid').empty();
+            $('#col-pending').empty();
+            $('#col-preparing').empty();
+            $('#col-served').empty();
+            orderIndex = {};
+
+            let counts = { unpaid: 0, pending: 0, preparing: 0, served: 0 };
+
+            orders.forEach(order => {
+                orderIndex[order.pkey] = order;
+                let badgeClass = 'badge-reservation';
+                let cardClass = 'reservation';
+                if(order.flow_type === 'Takeaway') { badgeClass = 'badge-takeaway'; cardClass = 'takeaway'; }
+                if(order.flow_type === 'Dine-In') { badgeClass = 'badge-dinein'; cardClass = 'dinein'; }
+
+                let itemsHtml = '';
+                if(order.items && order.items.length > 0) {
+                    itemsHtml = '<div class="mt-3 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">';
+                    order.items.forEach(i => {
+                        itemsHtml += `<div class="mb-1 last:mb-0"><b class="text-gray-800">${i.quantity}x</b> ${i.name}</div>`;
+                    });
+                    itemsHtml += '</div>';
+                }
+
+                let contactHtml = '';
+                if(order.contact && order.contact.whatsapp) {
+                    let waUrl = order.contact.whatsapp.replace(/\D/g, '');
+                    if(waUrl.startsWith('0')) waUrl = '62' + waUrl.substring(1);
+                    contactHtml = `
+                        <a href="https://wa.me/${waUrl}" target="_blank"
+                            style="margin-top:10px;display:flex;align-items:center;justify-content:center;width:100%;background:#25D366;color:#fff;font-size:11px;font-weight:700;padding:10px;border-radius:8px;text-decoration:none;gap:6px;">
+                            <svg style="width:15px;height:15px;flex-shrink:0" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                            WhatsApp
+                        </a>`;
+                }
+
+                // Shared button style helper
+                const btn = (bg, text, mt, onclick, inner) =>
+                    `<button onclick="${onclick}" style="margin-top:${mt};display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:${bg};color:${text};font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:none;cursor:pointer;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">${inner}</button>`;
+
+                let actionHtml = '';
+                let targetCol = '';
+
+                // Column routing logic
+                if(order.payment_status !== 'Paid') {
+                    counts.unpaid++;
+                    targetCol = '#col-unpaid';
+                    actionHtml = btn('#033187','#fff','10px',`updateStatus('${order.pkey}','payment','Paid')`,'Konfirmasi Pembayaran');
+                } else if(order.fulfillment_status === 'Pending') {
+                    counts.pending++;
+                    targetCol = '#col-pending';
+                    actionHtml = btn('#f59e0b','#fff','10px',`updateStatus('${order.pkey}','fulfillment','Preparing')`,'Mulai Siapkan');
+                } else if(order.fulfillment_status === 'Preparing') {
+                    counts.preparing++;
+                    targetCol = '#col-preparing';
+                    actionHtml =
+                        btn('#10b981','#fff','10px',`updateStatus('${order.pkey}','fulfillment','Served')`,'✓ Tandai Sudah Disajikan') +
+                        btn('#ef4444','#fff','6px', `releaseTable('${order.pkey}')`, '🔓 Tamu Pulang — Lepas Kursi');
+                } else if(order.fulfillment_status === 'Served') {
+                    counts.served++;
+                    targetCol = '#col-served';
+                    const tableLabel = (order.table_ids && order.table_ids.length > 0)
+                        ? order.table_ids.map(tid => getTableDisplayLabel(tid)).join(', ')
+                        : getTableDisplayLabel(order.table_id || '—');
+                    actionHtml =
+                        `<div style="margin-top:10px;display:flex;align-items:center;gap:8px;background:#fff7ed;color:#c2410c;font-size:11px;font-weight:600;padding:8px 12px;border-radius:8px;border:1px solid #fed7aa;">
+                            <svg style="width:14px;height:14px;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Meja ${tableLabel} masih terpesan
+                        </div>` +
+                        btn('#dc2626','#fff','6px',`releaseTable('${order.pkey}')`,
+                            `<svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg> Lepas Meja`);
+                }
+
+                if (order.flow_type === 'Dine-In' && order.fulfillment_status !== 'Served') {
+                    actionHtml += btn('#6b7280','#fff','6px',`changeSeat('${order.pkey}')`,'Ubah Kursi');
+                }
+
+                if(targetCol === '') return;
+
+                // Table display: support multi-table
+                const isFreeSeat = (order.seat_mode === 'free') || (
+                    order.flow_type === 'Dine-In' &&
+                    (!order.table_ids || order.table_ids.length === 0) &&
+                    !order.table_id &&
+                    !!order.seating_notes
+                );
+                const assignedTables = (order.table_ids && order.table_ids.length > 0)
+                    ? order.table_ids.map(t => `<span style="display:inline-block;background:#eff6ff;color:#033187;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid #bfdbfe;">${getTableDisplayLabel(t)}</span>`).join(' ')
+                    : (order.table_id ? `<strong>${getTableDisplayLabel(order.table_id)}</strong>` : '');
+                const bebasSeatTag = '<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid #fcd34d;">Bebas Seat</span>';
+                const tableDisplay = isFreeSeat
+                    ? (assignedTables ? `${assignedTables} ${bebasSeatTag}` : bebasSeatTag)
+                    : (assignedTables || '<span style="color:#9ca3af">Bawa Pulang</span>');
+
+                const payColor = order.payment_status === 'Paid' ? '#16a34a' : '#dc2626';
+                const arrivalLabel = formatArrivalLabel(order.arrival_time || '');
+                const countdownLabel = countdownToArrival(order.arrival_time || '');
+                const countdownColor = countdownLabel.includes('overdue') ? '#dc2626' : '#0f766e';
+
+                const cardHtml = `
+                    <div class="order-card ${cardClass}" id="card-${order.pkey}">
+                        <div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f3f4f6;">
+                            <div style="font-size:11px;font-weight:700;color:#6b7280;">#${order.pkey.split('-').pop()}</div>
+                            <div style="margin-top:6px;">
+                                <span class="badge ${badgeClass}">${toIdLabelFlow(order.flow_type)}</span>
+                            </div>
+                        </div>
+                        <div style="font-weight:700;color:#1f2937;font-size:15px;">${order.contact?.name || 'Tamu'}</div>
+                        <div style="font-size:11px;color:#6b7280;margin:6px 0 10px;display:flex;flex-direction:column;gap:4px;">
+                            <span style="display:flex;justify-content:space-between;align-items:center;"><span>Meja:</span><span style="display:flex;gap:4px;">${tableDisplay}</span></span>
+                            ${isFreeSeat ? `<span style="display:flex;justify-content:space-between;"><span>Catatan Kursi:</span><span style="color:#1f2937;">${order.seating_notes || '-'}</span></span>` : ''}
+                            ${order.party_size ? `<span style="display:flex;justify-content:space-between;"><span>Jumlah Tamu:</span><strong style="color:#1f2937;">${order.party_size} orang</strong></span>` : ''}
+                            <span style="display:flex;justify-content:space-between;"><span>Kedatangan:</span><strong style="color:#1f2937;">${arrivalLabel}</strong></span>
+                            <span style="display:flex;justify-content:space-between;"><span>Hitung Mundur:</span><strong style="color:${countdownColor};">${countdownLabel}</strong></span>
+                            ${order.service_timing ? `<span style="display:flex;justify-content:space-between;"><span>Waktu Siap:</span><span style="color:#1f2937;">${toIdLabelTiming(order.service_timing)}</span></span>` : ''}
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;background:#f9fafb;padding:8px;border-radius:8px;border:1px solid #f3f4f6;margin-bottom:8px;">
+                            <span style="color:#6b7280;">Pembayaran: <strong style="color:${payColor};">${toIdLabelPayment(order.payment_status)}</strong></span>
+                            <span style="font-weight:700;color:#033187;">Rp ${order.total_amount.toLocaleString('id-ID')}</span>
+                        </div>
+                        ${itemsHtml}
+                        <div style="display:flex;flex-direction:column;gap:4px;">
+                            ${contactHtml}
+                            ${actionHtml}
+                        </div>
+                    </div>
+                `;
+                $(targetCol).append(cardHtml);
+            });
+
+            $('#count-unpaid').text(counts.unpaid);
+            $('#count-pending').text(counts.pending);
+            $('#count-preparing').text(counts.preparing);
+            $('#count-served').text(counts.served);
+        }
+
+        function fetchOrders() {
+            $.get('/admin/api/orders', function(res) {
+                if(res.ok) {
+                    renderCards(res.data);
+                }
+            });
+        }
+
+        function fetchFloorPlanTables(onDone) {
+            $.get('/admin/api/floor_plan', function(res) {
+                if (res.ok && res.data && res.data.tables) {
+                    floorPlanTables = res.data.tables.map(t => ({
+                        id: t.id,
+                        label: t.label || t.id,
+                        display_name: (t.table_name || '').trim() || (t.label || '').trim() || t.id
+                    }));
+                } else {
+                    floorPlanTables = [];
+                }
+                if (typeof onDone === 'function') {
+                    onDone();
+                }
+            });
+        }
+
+        function updateStatus(orderId, type, status) {
+            $.ajax({
+                url: '/admin/api/order/status',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ order_id: orderId, update_type: type, new_status: status }),
+                success: function(res) {
+                    if(res.ok) {
+                        fetchOrders();
+                        fetchReservedTables();
+                    }
+                    else {
+                        // If payment confirm failed because seat is occupied, guide admin to change seat first.
+                        if (type === 'payment' && status === 'Paid' && (res.msg || '').toLowerCase().includes('seat')) {
+                            autoConfirmPaymentOrderId = orderId;
+                            changeSeat(orderId);
+                            $('#seat-change-error').show().text((res.msg || 'Kursi tidak tersedia.') + ' Silakan ubah kursi, lalu pembayaran akan dikonfirmasi otomatis.');
+                            return;
+                        }
+                        alert('Error: ' + (res.msg || 'Terjadi kesalahan'));
+                    }
+                }
+            });
+        }
+
+        function changeSeat(orderId) {
+            const order = orderIndex[orderId] || {};
+            if (order.fulfillment_status === 'Served') {
+                alert('Seat tidak bisa diubah pada kolom Guest Departed. Silakan release seat jika tamu sudah pulang.');
+                return;
+            }
+            seatModalOrderId = orderId;
+            renderSeatOptions(order);
+            $('#seat-change-error').hide().text('');
+            $('#seat-change-modal').css('display', 'flex');
+        }
+
+        function renderSeatOptions(order) {
+            const currentSeats = (order.table_ids && order.table_ids.length > 0)
+                ? order.table_ids
+                : (order.table_id ? [order.table_id] : []);
+
+            const selectEl = $('#seat-change-select');
+            selectEl.empty();
+
+            const fallback = currentSeats.filter(tid => !floorPlanTables.some(ft => ft.id === tid));
+            const mergedTables = floorPlanTables.concat(fallback.map(tid => ({ id: tid, label: tid })));
+
+            mergedTables.forEach(t => {
+                const occupiedBy = reservedByOrder[t.id] || '';
+                const tableState = tableStateMap[t.id] || {};
+                const selected = currentSeats.includes(t.id);
+                const blockedByOtherOrder = occupiedBy && occupiedBy !== order.pkey;
+                const blockedByStatus = !selected && tableState.status && tableState.status !== 'Available' && tableState.order_pkey !== order.pkey;
+                const blocked = blockedByOtherOrder || blockedByStatus;
+                const statusLabel = blocked && tableState.status ? ` - ${String(tableState.status).toUpperCase()}` : (blocked ? ' - TIDAK TERSEDIA' : '');
+                const option = $('<option></option>')
+                    .val(t.id)
+                    .text(`${(t.display_name || t.label || t.id)} (${t.id})${statusLabel}`)
+                    .prop('selected', selected)
+                    .prop('disabled', blocked);
+                selectEl.append(option);
+            });
+        }
+
+        function closeSeatModal() {
+            seatModalOrderId = '';
+            $('#seat-change-modal').hide();
+            $('#seat-change-error').hide().text('');
+            $('#seat-change-save-btn').prop('disabled', false).text('Simpan');
+        }
+
+        function submitSeatChange() {
+            if (!seatModalOrderId) return;
+            const tableIds = ($('#seat-change-select').val() || []).map(v => String(v).trim()).filter(v => v.length > 0);
+
+            $('#seat-change-save-btn').prop('disabled', true).text('Menyimpan...');
+            $('#seat-change-error').hide().text('');
+
+            $.ajax({
+                url: '/admin/api/order/reassign_tables',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ order_id: seatModalOrderId, table_ids: tableIds }),
+                success: function(res) {
+                    if (res.ok) {
+                        const changedOrderId = seatModalOrderId;
+                        closeSeatModal();
+                        fetchReservedTables();
+                        fetchOrders();
+                        if (autoConfirmPaymentOrderId === changedOrderId) {
+                            const retryOrderId = autoConfirmPaymentOrderId;
+                            autoConfirmPaymentOrderId = '';
+                            updateStatus(retryOrderId, 'payment', 'Paid');
+                        }
+                    } else {
+                        $('#seat-change-error').show().text(res.msg || 'Gagal mengubah kursi.');
+                        $('#seat-change-save-btn').prop('disabled', false).text('Simpan');
+                    }
+                },
+                error: function() {
+                    $('#seat-change-error').show().text('Terjadi kesalahan server saat mengubah kursi.');
+                    $('#seat-change-save-btn').prop('disabled', false).text('Simpan');
+                }
+            });
+        }
+
+        function releaseTable(orderId) {
+            if(!confirm('Konfirmasi tamu sudah pulang? Ini akan melepas meja agar bisa dipakai reservasi baru.')) return;
+            $.ajax({
+                url: '/admin/api/order/release',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ order_id: orderId }),
+                success: function(res) {
+                    if(res.ok) {
+                        fetchOrders();
+                    } else {
+                        alert('Gagal melepas meja: ' + (res.msg || 'Terjadi kesalahan'));
+                    }
+                }
+            });
+        }
+
+        function resetAllTables() {
+            if(!confirm('⚠️ Kosongkan SEMUA kursi?\n\nIni akan menandai semua meja menjadi Available tanpa melihat status pesanan. Gunakan hanya jika semua tamu sudah pulang.')) return;
+            if(!confirm('Apakah Anda benar-benar yakin? Tindakan ini tidak bisa dibatalkan.')) return;
+            $.ajax({
+                url: '/admin/api/tables/reset',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({}),
+                success: function(res) {
+                    if(res.ok) {
+                        alert('✅ Semua kursi berhasil dikosongkan! ' + (res.modified || 0) + ' meja direset ke Available.');
+                        fetchOrders();
+                    } else {
+                        alert('Error: ' + (res.msg || 'Terjadi kesalahan'));
+                    }
+                }
+            });
+        }
+
+        function fetchReservedTables() {
+            $.get('/admin/api/tables/reserved', function(res) {
+                const bar   = document.getElementById('reserved-tables-bar');
+                const chips = document.getElementById('reserved-chips');
+                reservedByOrder = {};
+                tableStateMap = {};
+                if(!res.ok || !res.data || res.data.length === 0) {
+                    bar.style.display = 'none';
+                    chips.innerHTML = '';
+                    return;
+                }
+                res.data.forEach(t => {
+                    reservedByOrder[t.table_id] = t.order_pkey || '';
+                    tableStateMap[t.table_id] = {
+                        status: t.status || '',
+                        order_pkey: t.order_pkey || ''
+                    };
+                });
+                bar.style.display = 'block';
+                chips.innerHTML = res.data.map(t => `
+                    <span style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #fcd34d;color:#92400e;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;box-shadow:0 1px 2px rgba(0,0,0,.06);">
+                        &#128681; ${getReservedChipLabel(t)}
+                        <button onclick='releaseSingleTable(${JSON.stringify(t.table_id)}, ${JSON.stringify(getReservedChipLabel(t))})'
+                            style="margin-left:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;border:none;cursor:pointer;"
+                            onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                            Lepas
+                        </button>
+                    </span>`).join('');
+            });
+        }
+
+        function releaseSingleTable(tableId, tableLabel) {
+            const displayLabel = tableLabel || tableId;
+            if(!confirm('Lepas meja "' + displayLabel + '" dan jadikan tersedia untuk reservasi baru?')) return;
+            $.ajax({
+                url: '/admin/api/tables/release',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ table_id: tableId }),
+                success: function(res) {
+                    if(res.ok) {
+                        // Backend already updated order.table_ids — refresh both panels
+                        fetchReservedTables();
+                        fetchOrders();
+                    } else {
+                        alert('Error: ' + (res.msg || 'Terjadi kesalahan'));
+                    }
+                }
+            });
+        }
+
+        function releaseTable(orderId) {
+            if(!confirm('Konfirmasi tamu sudah pulang? Ini akan melepas SEMUA meja pada pesanan ini.')) return;
+            $.ajax({
+                url: '/admin/api/order/release',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ order_id: orderId }),
+                success: function(res) {
+                    if(res.ok) {
+                        fetchReservedTables();
+                        fetchOrders();
+                    } else {
+                        alert('Gagal melepas meja: ' + (res.msg || 'Terjadi kesalahan'));
+                    }
+                }
+            });
+        }
+
+        function resetAllTables() {
+            if(!confirm('⚠️ Kosongkan SEMUA kursi?\n\nIni akan menandai semua meja Available tanpa melihat status pesanan.')) return;
+            if(!confirm('Apakah Anda benar-benar yakin? Tindakan ini tidak bisa dibatalkan.')) return;
+            $.ajax({
+                url: '/admin/api/tables/reset',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({}),
+                success: function(res) {
+                    if(res.ok) {
+                        alert('✅ Semua kursi berhasil dikosongkan! ' + (res.modified || 0) + ' meja direset ke Available.');
+                        fetchReservedTables();
+                        fetchOrders();
+                    } else {
+                        alert('Error: ' + (res.msg || 'Terjadi kesalahan'));
+                    }
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            fetchFloorPlanTables(function() {
+                fetchOrders();
+                fetchReservedTables();
+            });
+            setInterval(fetchOrders, 5000);
+            setInterval(function() {
+                fetchFloorPlanTables(fetchReservedTables);
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

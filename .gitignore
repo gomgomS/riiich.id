@@ -1,0 +1,39 @@
+# Python cache / bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+venv3810/
+.venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# Logs
+logs/
+*.log
+
+# Sensitive config / credentials
+pytavia_settings/config.py
+credentials*.json
+*.pem
+*.key
+*.p12
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+

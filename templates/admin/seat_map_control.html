@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Map Control - Renrich Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2/admin.output.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f3f4f6; }
+        .map-wrap { background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:12px; min-height:520px; display:flex; align-items:center; justify-content:center; overflow:auto; }
+        .table-node { cursor:pointer; transition: all .2s; }
+        .table-node:hover { filter: drop-shadow(0 2px 6px rgba(0,0,0,.16)); }
+        .table-available circle { fill:#d1fae5; stroke:#16a34a; stroke-width:2; }
+        .table-reserved circle { fill:#fee2e2; stroke:#dc2626; stroke-width:2; }
+        .table-occupied circle { fill:#ede9fe; stroke:#7c3aed; stroke-width:2; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+    <aside class="w-64 bg-white shadow-xl flex flex-col h-full hidden md:flex z-20">
+        <div class="h-16 flex items-center justify-center border-b border-gray-100">
+            <span class="text-2xl font-bold text-[#033187] tracking-wider font-playfair">RENRICH</span>
+        </div>
+        <div class="p-4 flex-1">
+            <ul class="space-y-2">
+                <li><a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">Dashboard</a></li>
+                <li><a href="/admin/operations" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">Live Operations</a></li>
+                <li><a href="/admin/seat-map-control" class="flex items-center gap-3 px-4 py-3 bg-[#033187] text-white rounded-lg font-medium shadow-md">Seat Map Control</a></li>
+                <li><a href="/admin/floor_designer" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">Floor Designer</a></li>
+            </ul>
+        </div>
+        <div class="p-4 border-t border-gray-100">
+            <a href="/admin/logout" class="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg font-medium transition">Logout</a>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6">
+            <h1 class="text-xl font-bold text-gray-800">Seat Map Control</h1>
+            <a href="/admin/operations" class="text-sm font-semibold text-[#033187] hover:underline">Back to Operations</a>
+        </header>
+
+        <div class="p-6 overflow-y-auto">
+            <div class="mb-4 flex flex-wrap gap-3 text-xs font-semibold">
+                <span class="inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-full"><span class="w-5 h-5 rounded-md border-2" style="background-color:#d1fae5;border-color:#16a34a;"></span> Available to Reserve</span>
+                <span class="inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-full"><span class="w-5 h-5 rounded-md border-2" style="background-color:#fee2e2;border-color:#dc2626;"></span> Already Reserved</span>
+                <span class="inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded-full"><span class="w-5 h-5 rounded-md border-2" style="background-color:#ede9fe;border-color:#7c3aed;"></span> Not Available</span>
+            </div>
+
+            <div class="map-wrap">
+                <svg id="seat-control-map" xmlns="http://www.w3.org/2000/svg" style="display:block; user-select:none;">
+                    <g id="map-lines"></g>
+                    <g id="map-tables"></g>
+                </svg>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const svgns = "http://www.w3.org/2000/svg";
+        let floorPlan = { lines: [], tables: [] };
+        let tableStatus = {};
+
+        function fetchData() {
+            $.get('/admin/api/floor_plan', function(planRes){
+                if (!planRes.ok) return;
+                floorPlan = planRes.data || { lines: [], tables: [] };
+                $.get('/admin/api/tables/reserved', function(tableRes){
+                    tableStatus = {};
+                    if (tableRes.ok && tableRes.data) {
+                        tableRes.data.forEach(t => { tableStatus[t.table_id] = t.status; });
+                    }
+                    renderMap();
+                });
+            });
+        }
+
+        function statusClass(status) {
+            if (status === 'Reserved') return 'table-reserved';
+            if (status === 'Occupied') return 'table-occupied';
+            return 'table-available';
+        }
+
+        function getTableDisplayName(table) {
+            if (!table) return '';
+            return (table.table_name || '').trim() || (table.label || '').trim() || table.id || '';
+        }
+
+        function renderMap() {
+            const lines = document.getElementById('map-lines');
+            const tables = document.getElementById('map-tables');
+            const svg = document.getElementById('seat-control-map');
+            lines.innerHTML = '';
+            tables.innerHTML = '';
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            const pad = 40;
+
+            (floorPlan.lines || []).forEach(line => {
+                const n = document.createElementNS(svgns, 'line');
+                n.setAttribute('x1', line.x1); n.setAttribute('y1', line.y1);
+                n.setAttribute('x2', line.x2); n.setAttribute('y2', line.y2);
+                n.setAttribute('stroke', line.stroke || '#4b5563');
+                n.setAttribute('stroke-width', line.width || 2);
+                if (line.dash) n.setAttribute('stroke-dasharray', line.dash);
+                lines.appendChild(n);
+                minX = Math.min(minX, line.x1, line.x2); maxX = Math.max(maxX, line.x1, line.x2);
+                minY = Math.min(minY, line.y1, line.y2); maxY = Math.max(maxY, line.y1, line.y2);
+            });
+
+            (floorPlan.tables || []).forEach(t => {
+                const g = document.createElementNS(svgns, 'g');
+                const st = tableStatus[t.id] || 'Available';
+                g.setAttribute('class', `table-node ${statusClass(st)}`);
+                g.setAttribute('transform', `translate(${t.cx}, ${t.cy})`);
+
+                const c = document.createElementNS(svgns, 'circle');
+                c.setAttribute('r', t.r || 25);
+                const tx = document.createElementNS(svgns, 'text');
+                tx.setAttribute('text-anchor', 'middle');
+                tx.setAttribute('dominant-baseline', 'central');
+                tx.setAttribute('font-size', '11px');
+                tx.setAttribute('font-weight', '700');
+                tx.setAttribute('fill', '#1f2937');
+                tx.textContent = getTableDisplayName(t);
+
+                const sub = document.createElementNS(svgns, 'text');
+                sub.setAttribute('text-anchor', 'middle');
+                sub.setAttribute('dominant-baseline', 'central');
+                sub.setAttribute('font-size', '9px');
+                sub.setAttribute('y', '13');
+                sub.setAttribute('fill', '#4b5563');
+                sub.textContent = st;
+
+                g.appendChild(c); g.appendChild(tx); g.appendChild(sub);
+                g.addEventListener('click', function(){ onTableClick(t.id, st); });
+                tables.appendChild(g);
+
+                const r = t.r || 25;
+                minX = Math.min(minX, t.cx - r); maxX = Math.max(maxX, t.cx + r);
+                minY = Math.min(minY, t.cy - r); maxY = Math.max(maxY, t.cy + r);
+            });
+
+            if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 1000; maxY = 700; }
+            svg.setAttribute('viewBox', `${minX-pad} ${minY-pad} ${(maxX-minX)+pad*2} ${(maxY-minY)+pad*2}`);
+            svg.setAttribute('width', (maxX-minX)+pad*2);
+            svg.setAttribute('height', (maxY-minY)+pad*2);
+        }
+
+        function onTableClick(tableId, currentStatus) {
+            let nextStatus = '';
+            if (currentStatus === 'Available') {
+                nextStatus = 'Reserved';
+            } else if (currentStatus === 'Reserved') {
+                nextStatus = 'Occupied';
+            } else {
+                nextStatus = 'Available';
+            }
+
+            $.ajax({
+                url: '/admin/api/table/status',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ table_id: tableId, status: nextStatus }),
+                success: function(res){
+                    if (!res.ok) {
+                        alert(res.msg || 'Failed update table status');
+                        return;
+                    }
+                    fetchData();
+                }
+            });
+        }
+
+        $(document).ready(function(){
+            fetchData();
+            setInterval(fetchData, 8000);
+        });
+    </script>
+</body>
+</html>

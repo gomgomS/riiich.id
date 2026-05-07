@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Promos & Events - Renrich Coffee{% endblock %}
+
+{% block content %}
+    <!-- Page Heading -->
+    <div class="py-16 md:py-24 bg-renrich-dark bg-opacity-90 bg-cover bg-center" style="background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=2000');">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-playfair font-bold text-white mb-4">Promos & Events</h1>
+            <p class="text-renrich-gold text-lg font-medium tracking-widest uppercase">What's Happening</p>
+        </div>
+    </div>
+
+    <!-- Highlight Articles -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <span class="text-renrich-gold font-bold uppercase tracking-wider">Latest Updates</span>
+                <h2 class="text-3xl md:text-5xl font-playfair font-bold text-renrich-dark mt-2 mb-4">Berita & Promo Terbaru</h2>
+                <p class="text-lg text-gray-500 max-w-2xl mx-auto">Dapatkan informasi promo menarik, menu baru, dan acara seru yang akan diadakan di Renrich Coffee.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <!-- Article 1 -->
+                <div class="bg-renrich-light rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 flex flex-col transform hover:-translate-y-2">
+                    <img src="https://images.unsplash.com/photo-1558401391-7899b4bd5bbf?auto=format&fit=crop&q=80&w=1000" alt="New Menu" class="w-full h-64 object-cover">
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <span class="inline-block bg-renrich-dark text-renrich-gold text-sm font-semibold px-4 py-1 rounded-full w-max mb-4">Promo</span>
+                        <h4 class="text-2xl font-playfair font-bold text-renrich-dark mb-4">Buy 1 Get 1 Signature Latte Weekend!</h4>
+                        <p class="text-gray-600 mb-6 flex-grow">Khusus akhir pekan ini, nikmati promo Buy 1 Get 1 untuk setiap pembelian Renrich Signature Latte. Ajak teman atau pasangan Anda untuk ngopi hemat bersama kami!</p>
+                        <div class="flex justify-between text-sm text-gray-500 mb-6">
+                            <span><i class="fa fa-calendar mr-2"></i>15 Mei 2026</span>
+                            <span><i class="fa fa-user mr-2"></i>Tim Renrich</span>
+                        </div>
+                        <a href="#" class="block text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold font-semibold py-3 rounded-full transition duration-300">
+                            Baca Selengkapnya
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Article 2 -->
+                <div class="bg-renrich-light rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 flex flex-col transform hover:-translate-y-2">
+                    <img src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&q=80&w=1000" alt="Acoustic Night" class="w-full h-64 object-cover">
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <span class="inline-block bg-renrich-dark text-renrich-gold text-sm font-semibold px-4 py-1 rounded-full w-max mb-4">Event</span>
+                        <h4 class="text-2xl font-playfair font-bold text-renrich-dark mb-4">Friday Acoustic Night Live Music</h4>
+                        <p class="text-gray-600 mb-6 flex-grow">Mulai akhir pekan Anda dengan alunan musik akustik yang menenangkan. Kami menghadirkan musisi lokal berbakat setiap Jumat malam mulai pukul 19.00 WIB.</p>
+                        <div class="flex justify-between text-sm text-gray-500 mb-6">
+                            <span><i class="fa fa-calendar mr-2"></i>12 Mei 2026</span>
+                            <span><i class="fa fa-user mr-2"></i>Tim Renrich</span>
+                        </div>
+                        <a href="#" class="block text-center border-2 border-renrich-gold text-renrich-dark hover:bg-renrich-dark hover:text-renrich-gold font-semibold py-3 rounded-full transition duration-300">
+                            Baca Selengkapnya
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-20 bg-renrich-dark text-center border-t-4 border-renrich-gold">
+        <div class="max-w-3xl mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-playfair font-bold text-white mb-6">Jangan Lewatkan Promo Menarik</h2>
+            <p class="text-white mb-8 text-lg">Hubungi WhatsApp kami untuk melakukan reservasi meja di acara spesial atau untuk mengklaim promo.</p>
+            <a href="{{ data.whatsapp_url }}" class="inline-block bg-white hover:bg-renrich-light text-renrich-dark text-lg font-bold px-8 py-4 rounded-full shadow-lg transition duration-300" target="_blank">
+                Klaim Promo via WhatsApp
+            </a>
+        </div>
+    </section>
+{% endblock %}

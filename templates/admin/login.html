@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Renrich Coffee</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2/admin.output.css') }}">
+    <style>
+        :root {
+            --renrich-brown: #00338C;
+            --renrich-gold: #02308E;
+            --renrich-cream: #E6E2DD;
+            --renrich-dark: #033187;
+            --renrich-light: #DFE1E7;
+        }
+        .font-playfair { font-family: 'Playfair Display', serif; }
+        .bg-renrich-dark { background-color: var(--renrich-dark); }
+        .text-renrich-dark { color: var(--renrich-dark); }
+        .text-renrich-gold { color: var(--renrich-gold); }
+    </style>
+</head>
+<body class="font-poppins bg-gray-100 flex items-center justify-center h-screen selection:bg-renrich-gold selection:text-white">
+
+    <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-playfair font-bold text-renrich-dark">RENRICH <span class="text-renrich-gold">ADMIN</span></h1>
+            <p class="text-gray-500 text-sm mt-2">Management Portal</p>
+        </div>
+
+        {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form action="/admin/login" method="POST">
+            <div class="mb-4">
+                <label for="username" class="block text-gray-700 font-medium mb-2">Username</label>
+                <input type="text" id="username" name="username" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-renrich-gold transition" required>
+            </div>
+            
+            <div class="mb-6">
+                <label for="password" class="block text-gray-700 font-medium mb-2">Password</label>
+                <input type="password" id="password" name="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-renrich-gold transition" required>
+            </div>
+            
+            <button type="submit" class="w-full bg-renrich-dark text-white font-bold py-3 rounded-lg hover:bg-renrich-gold transition shadow-md">
+                Login
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>

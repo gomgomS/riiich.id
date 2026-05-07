@@ -1,0 +1,1265 @@
+{% extends "base.html" %}
+
+{% block title %}Reservasi - Renrich Coffee{% endblock %}
+
+{% block content %}
+<style>
+    /* Wizard Steps */
+    .step-content {
+        display: none;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.4s ease;
+    }
+
+    .step-content.active {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Input Styling */
+    .premium-input {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        transition: all 0.3s;
+        outline: none;
+    }
+
+    .premium-input:focus {
+        background-color: #fff;
+        border-color: #02308E;
+        box-shadow: 0 0 0 4px rgba(2, 48, 142, 0.1);
+    }
+
+    /* SVG Table Map */
+    .map-container {
+        width: 100%;
+        height: 500px;
+        background-color: #f8f9fa;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.03);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #drag-toast {
+        position: absolute;
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(3, 49, 135, 0.9);
+        color: white;
+        padding: 6px 16px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 0.6s ease;
+        z-index: 20;
+        white-space: nowrap;
+    }
+
+    svg {
+        cursor: grab;
+    }
+
+    svg:active {
+        cursor: grabbing;
+    }
+
+    .table-node {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .table-available circle {
+        fill: #E6E2DD;
+        stroke: #033187;
+        stroke-width: 2;
+    }
+
+    .table-available:hover circle {
+        fill: #DFE1E7;
+        stroke-width: 4;
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+    }
+
+    .table-reserved circle {
+        fill: #fee2e2;
+        stroke: #ef4444;
+        stroke-width: 2;
+        cursor: not-allowed;
+    }
+
+    .table-occupied circle {
+        fill: #ede9fe;
+        stroke: #7c3aed;
+        stroke-width: 2;
+        cursor: not-allowed;
+    }
+
+    .table-occupied text {
+        fill: #4c1d95 !important;
+    }
+
+    .table-selected circle {
+        fill: #02308E !important;
+        stroke: #033187 !important;
+        stroke-width: 4 !important;
+        filter: drop-shadow(0 4px 10px rgba(2, 48, 142, 0.3));
+    }
+
+    .table-selected text {
+        fill: white !important;
+    }
+
+    /* Menu Selection */
+    .menu-item-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+    }
+
+    .menu-item-card:hover {
+        border-color: #033187;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -5px rgba(3, 49, 135, 0.1);
+    }
+
+    .menu-item-card.selected {
+        border-color: #02308E;
+        background-color: #f4f7fa;
+        box-shadow: 0 0 0 2px #02308E;
+    }
+
+    /* Stepper */
+    .stepper-item {
+        transition: all 0.3s;
+    }
+
+    .stepper-item.active .step-icon {
+        background-color: #033187;
+        color: white;
+        transform: scale(1.1);
+        box-shadow: 0 0 0 4px rgba(3, 49, 135, 0.15);
+    }
+
+    .stepper-item.completed .step-icon {
+        background-color: #10b981;
+        color: white;
+        border-color: #10b981;
+    }
+
+    .stepper-item.active .step-text {
+        color: #033187;
+        font-weight: 700;
+    }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(10px);
+    }
+</style>
+
+<div class="bg-[#033187] pb-32 pt-16 relative">
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white opacity-5 blur-3xl"></div>
+        <div class="absolute top-1/2 left-10 w-64 h-64 rounded-full bg-blue-400 opacity-10 blur-3xl"></div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <h2 class="text-4xl md:text-5xl font-playfair font-bold text-white mb-4">Reservasi Pengalamanmu</h2>
+        <p class="text-blue-100 text-lg max-w-2xl mx-auto font-light">Amankan meja Anda dan lakukan pre-order kopi
+            andalan kami agar pengalaman datang lebih nyaman.</p>
+    </div>
+</div>
+
+<section class="pb-24 bg-gray-50 min-h-[60vh] -mt-20 relative z-20">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Form Wrapper -->
+        <div class="glass-card shadow-2xl rounded-3xl p-6 md:p-12 border border-white">
+
+            <!-- Stepper -->
+            <div class="flex justify-between items-center mb-14 relative px-2 md:px-8">
+                <div
+                    class="absolute left-0 top-5 transform -translate-y-1/2 w-full h-1 bg-gray-200 z-0 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-green-500 transition-all duration-500 w-0"></div>
+                </div>
+
+                <div class="stepper-item active relative z-10 flex flex-col items-center group cursor-pointer"
+                    id="stepper-1" onclick="if($('#stepper-1').hasClass('completed')) prevStep(1)">
+                    <div
+                        class="step-icon w-10 h-10 rounded-full bg-white border-2 border-gray-200 text-gray-400 flex items-center justify-center font-bold mb-3 transition duration-300">
+                        1</div>
+                    <span
+                        class="step-text text-xs tracking-wider uppercase font-semibold text-gray-400 transition">Detail</span>
+                </div>
+                <div class="stepper-item relative z-10 flex flex-col items-center group cursor-pointer" id="stepper-2"
+                    onclick="if($('#stepper-2').hasClass('completed')) prevStep(2)">
+                    <div
+                        class="step-icon w-10 h-10 rounded-full bg-white border-2 border-gray-200 text-gray-400 flex items-center justify-center font-bold mb-3 transition duration-300">
+                        2</div>
+                    <span
+                        class="step-text text-xs tracking-wider uppercase font-semibold text-gray-400 transition">Kursi</span>
+                </div>
+                <div class="stepper-item relative z-10 flex flex-col items-center group cursor-pointer" id="stepper-3"
+                    onclick="if($('#stepper-3').hasClass('completed')) prevStep(3)">
+                    <div
+                        class="step-icon w-10 h-10 rounded-full bg-white border-2 border-gray-200 text-gray-400 flex items-center justify-center font-bold mb-3 transition duration-300">
+                        3</div>
+                    <span
+                        class="step-text text-xs tracking-wider uppercase font-semibold text-gray-400 transition">Menu</span>
+                </div>
+                <div class="stepper-item relative z-10 flex flex-col items-center" id="stepper-4">
+                    <div
+                        class="step-icon w-10 h-10 rounded-full bg-white border-2 border-gray-200 text-gray-400 flex items-center justify-center font-bold mb-3 transition duration-300">
+                        4</div>
+                    <span
+                        class="step-text text-xs tracking-wider uppercase font-semibold text-gray-400 transition">Konfirmasi</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Contact Details -->
+            <div class="step-content active" id="step-1">
+                <div class="text-center mb-8">
+                    <h3 class="text-2xl font-bold text-gray-800 font-playfair">Informasi Tamu</h3>
+                    <p class="text-gray-500 text-sm mt-1">Silakan isi data Anda agar kami dapat menghubungi Anda.</p>
+                </div>
+
+                <div class="max-w-md mx-auto space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Lengkap <span
+                                class="text-red-500">*</span></label>
+                        <input type="text" id="res-name" class="premium-input" placeholder="contoh: Budi Santoso">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Nomor WhatsApp <span
+                                class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+                                </svg>
+                            </span>
+                            <input type="text" id="res-wa" class="premium-input pl-12" placeholder="0812 3456 7890">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Jenis Layanan <span
+                                class="text-red-500">*</span></label>
+                        <select id="res-type"
+                            class="premium-input appearance-none bg-no-repeat bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239CA3AF%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[length:1.2em_1.2em]">
+                            <option value="Dine-In">🍽️ Dine-In (Reservasi Meja)</option>
+                            <option value="Takeaway">🛍️ Takeaway (Tanpa Pilih Meja)</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-6">
+                        <button type="button"
+                            class="w-full bg-[#033187] text-white px-8 py-4 rounded-xl font-bold hover:bg-[#02308E] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                            onclick="nextStep(2)">
+                            Lanjut ke Pilih Kursi &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Table Selection -->
+            <div class="step-content" id="step-2">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800 font-playfair">Pilih Meja Anda</h3>
+                        <p class="text-sm text-gray-500 mt-1">Gunakan peta di bawah untuk memilih posisi duduk yang
+                            Anda inginkan.</p>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white border border-gray-100 rounded-2xl p-4 md:p-5 shadow-sm">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Perkiraan Waktu Kedatangan <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Tanggal</label>
+                            <input type="date" id="res-arrival-date" class="premium-input">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Jam (format 24 jam)</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <select id="res-arrival-hour" class="premium-input"></select>
+                                <select id="res-arrival-minute" class="premium-input"></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-white border border-gray-100 rounded-2xl p-4 md:p-5 shadow-sm">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Mode Pemilihan Kursi <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer">
+                            <input type="radio" name="seat-mode" value="choose" checked onchange="updateSeatChoiceMode()">
+                            <div>
+                                <div class="font-semibold text-gray-800 text-sm">Pilih Seat Sendiri</div>
+                                <div class="text-xs text-gray-500">Pelanggan memilih meja langsung dari peta</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer">
+                            <input type="radio" name="seat-mode" value="free" onchange="updateSeatChoiceMode()">
+                            <div>
+                                <div class="font-semibold text-gray-800 text-sm">Bebas Seat</div>
+                                <div class="text-xs text-gray-500">Admin mengatur kursi saat operasional</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div id="free-seat-preference-wrap" class="mt-4 hidden">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Catatan Preferensi Kursi</label>
+                            <input type="text" id="res-seat-note" class="premium-input" placeholder="Contoh: bukan untuk perokok, area dingin, dekat jendela">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="map-container" id="client-map-wrap">
+                    <div class="map-container" id="client-map">
+                    <!-- Drag hint toast (shown briefly on map reveal, no blur) -->
+                    <div id="drag-toast" style="display:none;">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="6.5"
+                                d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"></path>
+                        </svg>
+                        Geser untuk melihat area
+                    </div>
+                    <div id="map-empty-state"
+                        class="absolute inset-0 flex-col items-center justify-center text-center text-gray-400"
+                        style="display:none">
+                        <svg class="w-14 h-14 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                        </svg>
+                        <p class="font-semibold text-sm">Denah kursi belum tersedia.</p>
+                        <p class="text-xs mt-1 opacity-70">Admin belum mengatur peta tempat duduk.</p>
+                    </div>
+                    <svg id="visual-map" xmlns="http://www.w3.org/2000/svg"
+                        style="display:block; cursor:grab; user-select:none; flex-shrink:0;">
+                        <g id="map-lines"></g>
+                        <g id="map-tables"></g>
+                    </svg>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex gap-4 text-xs font-medium bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm justify-center flex-wrap">
+                    <div class="flex items-center gap-2"><span
+                            class="w-3 h-3 rounded-full bg-[#E6E2DD] border border-[#033187]"></span> Tersedia
+                    </div>
+                    <div class="flex items-center gap-2"><span
+                            class="w-3 h-3 rounded-full bg-[#fee2e2] border border-[#ef4444]"></span> Sudah Dipesan</div>
+                    <div class="flex items-center gap-2"><span
+                            class="w-3 h-3 rounded-full border" style="background-color:#ede9fe;border-color:#7c3aed;"></span> Tidak Tersedia</div>
+                    <div class="flex items-center gap-2"><span
+                            class="w-3 h-3 rounded-full bg-[#02308E] shadow-[0_0_8px_rgba(2,48,142,0.6)]"></span>
+                        Dipilih</div>
+                </div>
+
+                <!-- Selection Summary & Party Size -->
+                <div id="seat-capacity-bar" class="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden" style="display:none!important">
+                    <!-- Selected tables row -->
+                    <div class="px-5 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#033187]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/></svg>
+                            <span class="text-sm font-semibold text-gray-700">Meja Terpilih</span>
+                        </div>
+                        <div id="selected-tables-chips" class="flex flex-wrap gap-2">
+                            <span class="text-xs text-gray-400 italic">Belum ada meja dipilih</span>
+                        </div>
+                    </div>
+                    <!-- Capacity + Party Size row -->
+                    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="text-center">
+                                <div class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5">Kapasitas Kursi</div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xl">👥</span>
+                                    <strong id="cap-total-seats" class="text-2xl font-bold text-[#033187]">0</strong>
+                                    <span class="text-gray-400 text-sm">kursi</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-2 border border-gray-100">
+                            <label class="text-sm font-semibold text-gray-600 whitespace-nowrap">Tambah Kursi</label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="adjustExtraSeats(-1)" class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-600 hover:border-[#033187] hover:text-[#033187] transition shadow-sm">-</button>
+                                <input type="number" id="extra-seat-input" min="0" value="0" class="w-14 text-center font-bold text-[#033187] text-lg bg-transparent border-0 outline-none" oninput="onExtraSeatInput(this)">
+                                <button type="button" onclick="adjustExtraSeats(1)" class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-600 hover:border-[#033187] hover:text-[#033187] transition shadow-sm">+</button>
+                            </div>
+                        </div>
+                        <div id="capacity-status" class="flex items-center gap-2 text-sm font-semibold text-gray-400">
+                            <span>Pilih meja untuk melihat kapasitas</span>
+                        </div>
+                    </div>
+                    <!-- Hidden fields kept for old bar JS refs -->
+                    <span id="cap-available" class="hidden">0</span>
+                    <span id="cap-reserved" class="hidden">0</span>
+                    <span id="cap-occupied" class="hidden">0</span>
+                    <span id="cap-total" class="hidden">0</span>
+                </div>
+
+                <div class="mt-6 flex flex-col-reverse md:flex-row justify-between items-center gap-4">
+                    <button type="button" class="text-gray-500 font-semibold hover:text-gray-800 transition py-3"
+                        onclick="prevStep(1)">&larr; Kembali ke Detail</button>
+                    <button type="button"
+                        class="w-full md:w-auto bg-[#033187] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#02308E] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                        onclick="nextStep(3)">
+                        Lanjut ke Menu &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Menu Pre-order -->
+            <div class="step-content" id="step-3">
+                <div class="text-center mb-8">
+                    <h3 class="text-2xl font-bold text-gray-800 font-playfair">Pre-order Menu Favorit</h3>
+                    <p class="text-gray-500 text-sm mt-1">Lewati antrean dengan memesan lebih awal. (Opsional)</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="menu-selection-list">
+                    <!-- Menu Item -->
+                    <div class="menu-item-card p-5 flex flex-col justify-between group" data-id="ITEM-001"
+                        data-price="45000" data-name="Renrich Signature Latte">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span
+                                    class="bg-blue-50 text-[#033187] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Signature</span>
+                                <h4 class="font-bold text-gray-800 text-lg group-hover:text-[#033187] transition">
+                                    Signature Latte</h4>
+                                <p class="text-sm text-gray-500 font-medium mt-1">Rp 45.000</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
+                            <span class="text-xs text-gray-400 font-medium">Tambahkan</span>
+                            <div class="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-200">
+                                <button
+                                    class="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-gray-600 hover:text-red-500 hover:shadow shadow-sm transition"
+                                    onclick="updateQty(this, -1)">-</button>
+                                <span class="qty font-bold text-[#033187] w-6 text-center">0</span>
+                                <button
+                                    class="w-8 h-8 rounded-full bg-[#033187] flex items-center justify-center font-bold text-white hover:bg-[#02308E] hover:shadow shadow-sm transition"
+                                    onclick="updateQty(this, 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Menu Item -->
+                    <div class="menu-item-card p-5 flex flex-col justify-between group" data-id="ITEM-002"
+                        data-price="30000" data-name="Premium Espresso">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span
+                                    class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Classic</span>
+                                <h4 class="font-bold text-gray-800 text-lg group-hover:text-[#033187] transition">
+                                    Premium Espresso</h4>
+                                <p class="text-sm text-gray-500 font-medium mt-1">Rp 30.000</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
+                            <span class="text-xs text-gray-400 font-medium">Tambahkan</span>
+                            <div class="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-200">
+                                <button
+                                    class="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-gray-600 hover:text-red-500 hover:shadow shadow-sm transition"
+                                    onclick="updateQty(this, -1)">-</button>
+                                <span class="qty font-bold text-[#033187] w-6 text-center">0</span>
+                                <button
+                                    class="w-8 h-8 rounded-full bg-[#033187] flex items-center justify-center font-bold text-white hover:bg-[#02308E] hover:shadow shadow-sm transition"
+                                    onclick="updateQty(this, 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Menu Item -->
+                    <div class="menu-item-card p-5 flex flex-col justify-between group" data-id="ITEM-003"
+                        data-price="42000" data-name="Matcha Fusion">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span
+                                    class="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Non-Coffee</span>
+                                <h4 class="font-bold text-gray-800 text-lg group-hover:text-[#033187] transition">Matcha
+                                    Fusion</h4>
+                                <p class="text-sm text-gray-500 font-medium mt-1">Rp 42.000</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
+                            <span class="text-xs text-gray-400 font-medium">Tambahkan</span>
+                            <div class="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-200">
+                                <button
+                                    class="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-gray-600 hover:text-red-500 hover:shadow shadow-sm transition"
+                                    onclick="updateQty(this, -1)">-</button>
+                                <span class="qty font-bold text-[#033187] w-6 text-center">0</span>
+                                <button
+                                    class="w-8 h-8 rounded-full bg-[#033187] flex items-center justify-center font-bold text-white hover:bg-[#02308E] hover:shadow shadow-sm transition"
+                                    onclick="updateQty(this, 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-6 bg-blue-50/50 rounded-2xl border border-blue-100 max-w-lg mx-auto shadow-sm">
+                    <label class="block text-sm font-semibold text-[#033187] mb-3 text-center">Kapan pesanan ingin
+                        disiapkan?</label>
+                    <select id="res-timing"
+                        class="premium-input bg-white appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239CA3AF%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[length:1.2em_1.2em]">
+                        <option value="Serve on Arrival">⚡ Siapkan segera saat saya tiba</option>
+                        <option value="Ready after Arrival">🛋️ Siapkan setelah saya duduk di meja</option>
+                    </select>
+                </div>
+
+                <div
+                    class="mt-10 pt-6 border-t border-gray-100 flex flex-col-reverse md:flex-row justify-between items-center gap-6">
+                    <button type="button" class="text-gray-500 font-semibold hover:text-gray-800 transition"
+                        onclick="prevStep(2)">&larr; Kembali ke Kursi</button>
+                    <div
+                        class="flex flex-col md:flex-row items-center gap-4 bg-white p-2 pl-6 rounded-full shadow-md border border-gray-100 w-full md:w-auto justify-between md:justify-end">
+                        <div class="flex flex-col text-left">
+                            <span
+                                class="text-[10px] text-gray-400 font-bold uppercase tracking-wider leading-none">Subtotal</span>
+                            <span class="font-bold text-xl text-[#033187] leading-tight" id="total-price-display">Rp
+                                0</span>
+                        </div>
+                        <button type="button"
+                            class="bg-[#033187] text-white px-8 py-3 rounded-full font-bold hover:bg-[#02308E] hover:shadow-lg transition-all duration-300 w-full md:w-auto"
+                            onclick="nextStep(4)">Tinjau Pesanan</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Confirmation -->
+            <div class="step-content" id="step-4">
+                <div class="max-w-2xl mx-auto">
+                    <div class="text-center mb-10">
+                        <div
+                            class="w-20 h-20 bg-blue-50 text-[#033187] rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+                                </path>
+                            </svg>
+                        </div>
+                        <h3 class="text-3xl font-bold text-gray-800 font-playfair">Tinjau Reservasi</h3>
+                        <p class="text-gray-500 mt-2">Silakan cek kembali detail Anda sebelum konfirmasi.</p>
+                    </div>
+
+                    <div
+                        class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6 mb-10 relative overflow-hidden">
+                        <!-- Decorative top accent -->
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#033187] to-blue-400"></div>
+
+                        <!-- Details Grid -->
+                        <div class="grid grid-cols-2 gap-y-6 gap-x-4">
+                            <div>
+                                <span class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Nama
+                                    Tamu</span>
+                                <strong id="rev-name" class="text-gray-800 text-lg"></strong>
+                            </div>
+                            <div>
+                                <span
+                                    class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Nomor WhatsApp</span>
+                                <strong id="rev-wa" class="text-gray-800 text-lg"></strong>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Jenis
+                                    Layanan</span>
+                                <strong id="rev-type"
+                                    class="text-[#033187] bg-blue-50 px-3 py-1 rounded-full text-sm"></strong>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Waktu Kedatangan</span>
+                                <strong id="rev-arrival" class="text-gray-800 bg-gray-100 px-3 py-1 rounded-full text-sm">—</strong>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Tambahan Kursi</span>
+                                <strong id="rev-extra-seat" class="text-gray-800 bg-gray-100 px-3 py-1 rounded-full text-sm">—</strong>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Table
+                                    Dipilih</span>
+                                <div id="rev-table" class="flex flex-wrap gap-1.5 mt-1"></div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-dashed border-gray-200 pt-6">
+                            <span
+                                class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">Item Pre-order</span>
+                            <div id="rev-items" class="text-gray-800 font-medium space-y-2">Tidak ada</div>
+                            <div class="mt-4 text-xs text-gray-500 italic flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span id="rev-timing"></span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 pt-6 flex justify-between items-end">
+                            <span class="text-gray-500 font-semibold">Total Pembayaran</span>
+                            <strong id="rev-total" class="text-3xl text-[#033187] font-bold">Rp 0</strong>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col-reverse md:flex-row justify-between items-center gap-4">
+                        <button type="button"
+                            class="text-gray-500 font-semibold hover:text-gray-800 transition px-6 py-3"
+                            onclick="prevStep(3)">&larr; Ubah Pesanan</button>
+                        <div class="w-full md:w-auto flex flex-col items-stretch gap-2">
+                            <button type="button" id="btn-submit"
+                                class="w-full md:w-auto bg-green-600 text-white px-10 py-4 rounded-xl font-bold hover:bg-green-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 text-lg flex items-center justify-center gap-2"
+                                onclick="submitReservation()">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Konfirmasi & Reservasi Sekarang
+                            </button>
+                            <p class="text-xs text-red-600 font-medium text-center md:text-right">
+                                Jangan lupa untuk segera melakukan pembayaran, karena reservasi akan dianggap berhasil setelah pembayaran berhasil dikonfirmasi.  
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success State -->
+            <div class="step-content py-16" id="step-success">
+                <div class="text-center max-w-lg mx-auto">
+                    <div
+                        class="w-28 h-28 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+                        <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-4xl font-playfair font-bold text-gray-800 mb-4">Reservasi Berhasil!</h3>
+                    <p class="text-gray-500 mb-10 text-lg leading-relaxed">Terima kasih sudah memilih Renrich Coffee.
+                        Reservasi Anda sudah berhasil dibuat. Kami akan segera menghubungi Anda via WhatsApp untuk
+                        konfirmasi pembayaran.</p>
+                    <a href="/"
+                        class="inline-block bg-[#033187] text-white px-10 py-4 rounded-full font-bold hover:bg-[#02308E] hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">Kembali
+                        ke Beranda</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Floor Plan Data injected from Python -->
+<script>
+    const floorPlanData = {{ floor_plan | tojson | safe }};
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let reservationData = {
+        contact: { name: "", whatsapp: "" },
+        flow_type: "Dine-In",
+        arrival_time: "",
+        seat_mode: "choose",
+        seating_notes: "",
+        table_ids: [],      // array — supports multi-table selection
+        table_labels: [],   // display labels
+        table_capacity: 0,  // total seats across selected tables
+        extra_seats: 0,
+        party_size: 0,
+        items: [],
+        service_timing: "Serve on Arrival",
+        total_amount: 0
+    };
+
+    function getTableDisplayName(table) {
+        if (!table) return '';
+        return (table.table_name || '').trim() || (table.label || '').trim() || table.id || '';
+    }
+
+    // Render SVG Map
+    const svgns = "http://www.w3.org/2000/svg";
+    const MAP_PADDING = 56;
+
+    function renderMap() {
+        const linesLayer = document.getElementById('map-lines');
+        const tablesLayer = document.getElementById('map-tables');
+        const svgEl = document.getElementById('visual-map');
+        const emptyState = document.getElementById('map-empty-state');
+        if (!linesLayer || !tablesLayer || !svgEl) return;
+
+        linesLayer.innerHTML = '';
+        tablesLayer.innerHTML = '';
+
+        const hasLines = floorPlanData.lines && floorPlanData.lines.length > 0;
+        const hasTables = floorPlanData.tables && floorPlanData.tables.length > 0;
+
+        if (!hasLines && !hasTables) {
+            svgEl.style.display = 'none';
+            emptyState.style.display = 'flex';
+            return;
+        }
+        svgEl.style.display = 'block';
+        emptyState.style.display = 'none';
+
+        // Track bounding box across all content
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        function expandBounds(x, y) {
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+        }
+
+        if (hasLines) {
+            floorPlanData.lines.forEach(line => {
+                const node = document.createElementNS(svgns, 'line');
+                node.setAttribute('x1', line.x1); node.setAttribute('y1', line.y1);
+                node.setAttribute('x2', line.x2); node.setAttribute('y2', line.y2);
+                node.setAttribute('stroke', line.stroke || '#333');
+                node.setAttribute('stroke-width', line.width || 2);
+                if (line.dash) node.setAttribute('stroke-dasharray', line.dash);
+                linesLayer.appendChild(node);
+                expandBounds(line.x1, line.y1);
+                expandBounds(line.x2, line.y2);
+            });
+        }
+
+        if (hasTables) {
+            floorPlanData.tables.forEach(table => {
+                const g = document.createElementNS(svgns, 'g');
+                g.setAttribute('id', table.id);
+                g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
+
+                let statusClass = 'table-available';
+                if (table.status === 'Reserved') statusClass = 'table-reserved';
+                if (table.status === 'Occupied') statusClass = 'table-occupied';
+
+                g.setAttribute('class', `table-node ${statusClass}`);
+
+                const circle = document.createElementNS(svgns, 'circle');
+                circle.setAttribute('r', table.r);
+
+                // Table label (centered)
+                const text = document.createElementNS(svgns, 'text');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dominant-baseline', 'central');
+                text.setAttribute('font-size', '11px');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('fill', '#033187');
+                text.setAttribute('y', '-7');
+                const displayName = getTableDisplayName(table);
+                text.textContent = displayName;
+
+                // Capacity badge below label: person icon + count
+                const capacity = table.capacity || 4;
+                const capText = document.createElementNS(svgns, 'text');
+                capText.setAttribute('text-anchor', 'middle');
+                capText.setAttribute('dominant-baseline', 'central');
+                capText.setAttribute('font-size', '9px');
+                capText.setAttribute('fill', '#033187');
+                capText.setAttribute('y', '7');
+                capText.textContent = '\u{1F465} ' + capacity;
+
+                g.appendChild(circle);
+                g.appendChild(text);
+                g.appendChild(capText);
+
+                // Multi-select toggle click
+                $(g).click(function () {
+                    if (statusClass !== 'table-available') {
+                        alert('This table is not available.');
+                        return;
+                    }
+                    const idx = reservationData.table_ids.indexOf(table.id);
+                    if (idx === -1) {
+                        // Select
+                        reservationData.table_ids.push(table.id);
+                        reservationData.table_labels.push(displayName || table.id);
+                        reservationData.table_capacity += capacity;
+                        $(this).addClass('table-selected');
+                    } else {
+                        // Deselect
+                        reservationData.table_ids.splice(idx, 1);
+                        reservationData.table_labels.splice(idx, 1);
+                        reservationData.table_capacity -= capacity;
+                        $(this).removeClass('table-selected');
+                    }
+                    updateSelectionSummary();
+                });
+
+                tablesLayer.appendChild(g);
+                const r = table.r || 30;
+                // Include label/sub-label visual area so top-most tables are not clipped.
+                expandBounds(table.cx - r - 4, table.cy - r - 22);
+                expandBounds(table.cx + r + 4, table.cy + r + 18);
+            });
+        }
+
+        // Compute tight viewBox from actual content + padding
+        const vbX = minX - MAP_PADDING;
+        const vbY = minY - MAP_PADDING;
+        const vbW = (maxX - minX) + MAP_PADDING * 2;
+        const vbH = (maxY - minY) + MAP_PADDING * 2;
+        svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+        svgEl.setAttribute('width', vbW);
+        svgEl.setAttribute('height', vbH);
+
+        // Populate seat capacity bar
+        if (hasTables) {
+            let cntAvail = 0, cntReserved = 0, cntOccupied = 0;
+            floorPlanData.tables.forEach(t => {
+                if (t.status === 'Reserved') cntReserved++;
+                else if (t.status === 'Occupied') cntOccupied++;
+                else cntAvail++;
+            });
+            document.getElementById('cap-available').textContent = cntAvail;
+            document.getElementById('cap-reserved').textContent = cntReserved;
+            document.getElementById('cap-occupied').textContent = cntOccupied;
+            document.getElementById('cap-total').textContent = floorPlanData.tables.length;
+            const bar = document.getElementById('seat-capacity-bar');
+            bar.style.cssText = 'display:flex!important';
+        }
+
+        // Setup clamped pan — prevent dragging into empty space
+        initPan(vbW, vbH);
+    }
+
+    function initPan(contentW, contentH) {
+        const container = document.getElementById('client-map');
+        const svgEl = document.getElementById('visual-map');
+        const toast = document.getElementById('drag-toast');
+        let isPanning = false, startX = 0, startY = 0;
+        let panX = 0, panY = 0;
+
+        // Only show toast if content is larger than container
+        function showToastIfNeeded() {
+            const cW = container.clientWidth;
+            const cH = container.clientHeight;
+            if (contentW > cW || contentH > cH) {
+                toast.style.display = 'flex';
+                toast.style.opacity = '1';
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => { toast.style.display = 'none'; }, 650);
+                }, 2500);
+            }
+        }
+
+        function clampPan(x, y) {
+            const cW = container.clientWidth;
+            const cH = container.clientHeight;
+            const maxPanX = Math.max(0, contentW - cW);
+            const maxPanY = Math.max(0, contentH - cH);
+            return {
+                x: Math.min(0, Math.max(-maxPanX, x)),
+                y: Math.min(0, Math.max(-maxPanY, y))
+            };
+        }
+
+        function applyPan() {
+            svgEl.style.transform = `translate(${panX}px, ${panY}px)`;
+        }
+
+        // Remove old listeners before adding new ones (prevent stacking on re-render)
+        const oldClone = container.cloneNode(false);
+        // We use a named handler approach instead
+        container._onMouseDown = (e) => {
+            isPanning = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+            svgEl.style.cursor = 'grabbing';
+            e.preventDefault();
+        };
+        container.removeEventListener('mousedown', container._onMouseDown);
+        container.addEventListener('mousedown', container._onMouseDown);
+
+        window.addEventListener('mousemove', e => {
+            if (!isPanning) return;
+            const raw = { x: e.clientX - startX, y: e.clientY - startY };
+            const clamped = clampPan(raw.x, raw.y);
+            panX = clamped.x; panY = clamped.y;
+            applyPan();
+        });
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+            svgEl.style.cursor = 'grab';
+        });
+
+        // Touch support
+        container.addEventListener('touchstart', e => {
+            const t = e.touches[0];
+            isPanning = true;
+            startX = t.clientX - panX;
+            startY = t.clientY - panY;
+        }, { passive: true });
+        container.addEventListener('touchmove', e => {
+            if (!isPanning) return;
+            const t = e.touches[0];
+            const raw = { x: t.clientX - startX, y: t.clientY - startY };
+            const clamped = clampPan(raw.x, raw.y);
+            panX = clamped.x; panY = clamped.y;
+            applyPan();
+        }, { passive: true });
+        container.addEventListener('touchend', () => { isPanning = false; });
+
+        // Show toast a short moment after the map becomes visible
+        setTimeout(showToastIfNeeded, 400);
+    }
+
+    function setArrivalMinutes(mins) {
+        const now = new Date();
+        now.setSeconds(0);
+        now.setMilliseconds(0);
+        now.setMinutes(now.getMinutes() + mins);
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mi = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('res-arrival-date').value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('res-arrival-hour').value = `${hh}`;
+        document.getElementById('res-arrival-minute').value = `${mi}`;
+    }
+
+    function parseArrivalInput(dateValue, hourValue, minuteValue) {
+        if (!dateValue || hourValue === '' || minuteValue === '') return null;
+        const normalized = `${dateValue}T${hourValue}:${minuteValue}`;
+        const dt = new Date(`${normalized}:00+07:00`);
+        if (isNaN(dt.getTime())) return null;
+        return { iso: normalized, date: dt };
+    }
+
+    function initArrivalTimeOptions() {
+        const hourEl = document.getElementById('res-arrival-hour');
+        const minuteEl = document.getElementById('res-arrival-minute');
+        if (!hourEl || !minuteEl) return;
+
+        hourEl.innerHTML = '<option value="">Jam</option>';
+        minuteEl.innerHTML = '<option value="">Menit</option>';
+
+        for (let h = 0; h <= 23; h++) {
+            const hh = String(h).padStart(2, '0');
+            hourEl.innerHTML += `<option value="${hh}">${hh}</option>`;
+        }
+        for (let m = 0; m <= 59; m += 5) {
+            const mm = String(m).padStart(2, '0');
+            minuteEl.innerHTML += `<option value="${mm}">${mm}</option>`;
+        }
+    }
+
+    $(document).ready(function () {
+        renderMap();
+        initArrivalTimeOptions();
+        updateSeatChoiceMode();
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        $('#res-arrival-date').attr('min', `${yyyy}-${mm}-${dd}`);
+        if (!$('#res-arrival-date').val() || !$('#res-arrival-hour').val() || !$('#res-arrival-minute').val()) {
+            setArrivalMinutes(30);
+        }
+    });
+
+    // Update the selection panel below the map
+    function updateSelectionSummary() {
+        const bar = document.getElementById('seat-capacity-bar');
+        bar.style.cssText = 'display:block!important';
+
+        // Chips for selected tables
+        const chipsEl = document.getElementById('selected-tables-chips');
+        if (reservationData.table_ids.length === 0) {
+            chipsEl.innerHTML = '<span class="text-xs text-gray-400 italic">Belum ada meja dipilih</span>';
+        } else {
+            chipsEl.innerHTML = reservationData.table_labels.map(lbl =>
+                `<span class="inline-flex items-center gap-1 bg-blue-50 text-[#033187] text-xs font-bold px-3 py-1 rounded-full border border-blue-200">${lbl}</span>`
+            ).join('');
+        }
+
+        // Total seats = table capacity + extra seats requested
+        const baseSeats = reservationData.table_capacity;
+        const extraSeats = reservationData.extra_seats || 0;
+        const totalSeats = baseSeats + extraSeats;
+        reservationData.party_size = totalSeats; // keep payload/backward compatibility
+        document.getElementById('cap-total-seats').textContent = totalSeats;
+
+        // Capacity information
+        const statusEl = document.getElementById('capacity-status');
+        if (baseSeats === 0) {
+            statusEl.innerHTML = '<span class="text-gray-400">Pilih meja untuk melihat kapasitas</span>';
+        } else if (extraSeats > 0) {
+            statusEl.innerHTML = `<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="text-green-600">Kapasitas awal ${baseSeats} + tambahan ${extraSeats} = ${totalSeats} kursi</span>`;
+        } else {
+            statusEl.innerHTML = `<span class="text-gray-600">Kapasitas kursi saat ini: ${totalSeats}</span>`;
+        }
+    }
+
+    function adjustExtraSeats(delta) {
+        const input = document.getElementById('extra-seat-input');
+        let v = parseInt(input.value) + delta;
+        if (v < 0) v = 0;
+        input.value = v;
+        reservationData.extra_seats = v;
+        updateSelectionSummary();
+    }
+
+    function onExtraSeatInput(el) {
+        let v = parseInt(el.value);
+        if (isNaN(v) || v < 0) v = 0;
+        el.value = v;
+        reservationData.extra_seats = v;
+        updateSelectionSummary();
+    }
+
+    function updateSeatChoiceMode() {
+        const mode = $('input[name="seat-mode"]:checked').val() || 'choose';
+        reservationData.seat_mode = mode;
+        const isFree = mode === 'free';
+        if (isFree) {
+            $('#free-seat-preference-wrap').removeClass('hidden');
+            $('#client-map-wrap').hide();
+            document.getElementById('seat-capacity-bar').style.cssText = 'display:none!important';
+            reservationData.table_ids = [];
+            reservationData.table_labels = [];
+            reservationData.table_capacity = 0;
+            $('#map-tables .table-node').removeClass('table-selected');
+        } else {
+            $('#free-seat-preference-wrap').addClass('hidden');
+            $('#client-map-wrap').show();
+            if (floorPlanData.tables && floorPlanData.tables.length > 0) {
+                document.getElementById('seat-capacity-bar').style.cssText = 'display:block!important';
+            }
+        }
+    }
+
+    // Wizard Logic
+    function nextStep(step) {
+        // Validation before moving
+        if (step === 2) {
+            reservationData.contact.name = $('#res-name').val().trim();
+            reservationData.contact.whatsapp = $('#res-wa').val().trim();
+            reservationData.flow_type = $('#res-type').val();
+
+            if (!reservationData.contact.name || !reservationData.contact.whatsapp) {
+                alert("Mohon isi Nama dan Nomor WhatsApp.");
+                return;
+            }
+        }
+
+        if (step === 3) {
+            const arrivalDate = String($('#res-arrival-date').val() || '').trim();
+            const arrivalHour = String($('#res-arrival-hour').val() || '').trim();
+            const arrivalMinute = String($('#res-arrival-minute').val() || '').trim();
+            reservationData.seat_mode = $('input[name="seat-mode"]:checked').val() || 'choose';
+            reservationData.seating_notes = $('#res-seat-note').val().trim();
+
+            if (!arrivalDate || !arrivalHour || !arrivalMinute) {
+                alert("Mohon pilih Waktu Kedatangan di Langkah 2.");
+                return;
+            }
+            const parsedArrival = parseArrivalInput(arrivalDate, arrivalHour, arrivalMinute);
+            if (!parsedArrival) {
+                alert("Format Waktu Kedatangan tidak valid.");
+                return;
+            }
+            if (parsedArrival.date.getTime() < new Date().getTime()) {
+                alert("Waktu Kedatangan tidak boleh di masa lalu.");
+                return;
+            }
+            reservationData.arrival_time = parsedArrival.iso;
+
+            if (reservationData.flow_type === 'Dine-In') {
+                if (reservationData.seat_mode === 'choose' && reservationData.table_ids.length === 0) {
+                    alert("Mohon pilih minimal satu meja untuk lanjut.");
+                    return;
+                }
+                if (reservationData.seat_mode === 'free' && !reservationData.seating_notes) {
+                    alert("Mohon isi catatan untuk mode Bebas Seat.");
+                    return;
+                }
+            }
+        }
+
+        if (step === 4) {
+            reservationData.service_timing = $('#res-timing').val();
+            updateReview();
+        }
+
+        $('.step-content').removeClass('active');
+        $(`#step-${step}`).addClass('active');
+
+        // Update Stepper
+        for (let i = 1; i <= 4; i++) {
+            if (i < step) {
+                $(`#stepper-${i}`).addClass('completed').removeClass('active');
+            } else if (i === step) {
+                $(`#stepper-${i}`).addClass('active').removeClass('completed');
+            } else {
+                $(`#stepper-${i}`).removeClass('completed active');
+            }
+        }
+    }
+
+    function prevStep(step) {
+        if (step === 2 && reservationData.flow_type === 'Takeaway') {
+            step = 1; // skip table selection backward
+        }
+        $('.step-content').removeClass('active');
+        $(`#step-${step}`).addClass('active');
+
+        // Update Stepper
+        for (let i = 1; i <= 4; i++) {
+            if (i < step) {
+                $(`#stepper-${i}`).addClass('completed').removeClass('active');
+            } else if (i === step) {
+                $(`#stepper-${i}`).addClass('active').removeClass('completed');
+            } else {
+                $(`#stepper-${i}`).removeClass('completed active');
+            }
+        }
+    }
+
+    // Menu Logic
+    function updateQty(btn, change) {
+        const card = $(btn).closest('.menu-item-card');
+        const span = card.find('.qty');
+        let qty = parseInt(span.text()) + change;
+        if (qty < 0) qty = 0;
+        span.text(qty);
+
+        if (qty > 0) card.addClass('selected');
+        else card.removeClass('selected');
+
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        let total = 0;
+        reservationData.items = [];
+
+        $('.menu-item-card').each(function () {
+            const qty = parseInt($(this).find('.qty').text());
+            if (qty > 0) {
+                const price = parseInt($(this).data('price'));
+                const name = $(this).data('name');
+                const id = $(this).data('id');
+                total += (price * qty);
+                reservationData.items.push({ item_id: id, name: name, quantity: qty, price: price });
+            }
+        });
+
+        reservationData.total_amount = total;
+        $('#total-price-display').text('Total: Rp ' + total.toLocaleString('id-ID'));
+    }
+
+    function formatWib24(value) {
+        if (!value) return '-';
+        const normalizedValue = value.includes(' ') ? value.replace(' ', 'T') : value;
+        const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(normalizedValue);
+        const normalized = hasTimezone ? normalizedValue : `${normalizedValue}+07:00`;
+        const dt = new Date(normalized);
+        if (isNaN(dt.getTime())) return value.replace('T', ' ');
+        return new Intl.DateTimeFormat('id-ID', {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).format(dt).replace(/\./g, ':');
+    }
+
+    function updateReview() {
+        $('#rev-name').text(reservationData.contact.name);
+        $('#rev-wa').text(reservationData.contact.whatsapp);
+        $('#rev-type').text(reservationData.flow_type);
+        $('#rev-arrival').text(formatWib24(reservationData.arrival_time));
+        $('#rev-timing').text(reservationData.service_timing);
+        $('#rev-total').text('Rp ' + reservationData.total_amount.toLocaleString('id-ID'));
+
+        // Multi-table display
+        if (reservationData.seat_mode === 'free') {
+            const notes = reservationData.seating_notes || '-';
+            $('#rev-table').html(`
+                <span class="bg-yellow-50 text-yellow-700 text-xs px-2 py-0.5 rounded-full border border-yellow-200 mr-1">Bebas Seat</span>
+                <div class="w-full mt-2 text-xs text-gray-600">
+                    <div><strong>Catatan:</strong> ${notes}</div>
+                </div>
+            `);
+        } else if (reservationData.table_ids.length > 0) {
+            const chips = reservationData.table_labels.map(lbl =>
+                `<span class="inline-block bg-blue-50 text-[#033187] text-xs font-bold px-2 py-0.5 rounded-full border border-blue-200 mr-1">${lbl}</span>`
+            ).join('');
+            $('#rev-table').html(chips);
+        } else {
+            $('#rev-table').html('<span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Takeaway</span>');
+        }
+
+        // Extra seats request
+        const extraSeatEl = $('#rev-extra-seat');
+        if (extraSeatEl.length) {
+            const baseSeats = reservationData.table_capacity || 0;
+            const extraSeats = reservationData.extra_seats || 0;
+            const totalSeats = baseSeats + extraSeats;
+            extraSeatEl.text(`${extraSeats} kursi (total kapasitas ${totalSeats})`);
+        }
+
+        if (reservationData.items.length > 0) {
+            let html = '';
+            reservationData.items.forEach(item => {
+                html += `<div class="flex justify-between"><span>${item.quantity}x ${item.name}</span></div>`;
+            });
+            $('#rev-items').html(html);
+        } else {
+            $('#rev-items').text("Belum ada item pre-order");
+        }
+    }
+
+    // Submit Logic
+    function submitReservation() {
+        const btn = $('#btn-submit');
+        btn.text('Memproses...').prop('disabled', true);
+
+        $.ajax({
+            url: '/api/reservation/submit',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(reservationData),
+            success: function (res) {
+                if (res.ok) {
+                    $('.step-content').removeClass('active');
+                    $('#step-success').addClass('active');
+                    $('.stepper-item').addClass('completed').removeClass('active');
+                } else {
+                    alert('Error: ' + res.msg);
+                    btn.text('Konfirmasi & Reservasi').prop('disabled', false);
+                }
+            },
+            error: function () {
+                alert('Terjadi kesalahan server.');
+                btn.text('Konfirmasi & Reservasi').prop('disabled', false);
+            }
+        });
+    }
+</script>
+{% endblock %}
