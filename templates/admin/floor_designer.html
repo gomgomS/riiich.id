@@ -21,6 +21,8 @@
         .table-node { cursor: grab; transition: stroke 0.2s; }
         .table-node:active { cursor: grabbing; }
         .table-selected { stroke: #02308E; stroke-width: 3px; stroke-dasharray: 5,5; }
+        .text-node { cursor: grab; }
+        .svg-asset-node { cursor: grab; }
         
         /* Architectural Lines */
         .arch-line { cursor: pointer; }
@@ -32,6 +34,11 @@
         
         #save-btn { background: #10b981; color: white; border: none; font-weight: bold; width: 100%; padding: 12px; border-radius: 8px; cursor: pointer; margin-top: 20px; }
         #save-btn:hover { background: #059669; }
+        .svg-popup { position: fixed; top: 84px; right: 16px; width: 280px; max-height: calc(100vh - 120px); overflow-y: auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: 12px; z-index: 40; }
+        .svg-popup-item { display: flex; align-items: center; gap: 10px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px; margin-bottom: 8px; cursor: grab; background: #f9fafb; }
+        .svg-popup-item:active { cursor: grabbing; }
+        .svg-popup-item img { width: 32px; height: 32px; object-fit: contain; pointer-events: none; }
+        .svg-popup-item.active { border-color: #02308E; background: #eff6ff; box-shadow: inset 0 0 0 1px rgba(2,48,142,.2); }
     </style>
 </head>
 <body class="flex">
@@ -45,6 +52,19 @@
             <button class="tool-btn active" id="tool-select">Pointer (Select/Move)</button>
             <button class="tool-btn" id="tool-draw-line">Draw Wall / Bar</button>
             <button class="tool-btn" id="tool-add-table">Add Table</button>
+            <button class="tool-btn" id="tool-add-text">Add Text</button>
+            <button class="tool-btn" id="tool-add-svg">Add SVG Asset</button>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <button class="tool-btn !mb-0 !text-center" id="tool-undo-btn" type="button">Undo</button>
+                <button class="tool-btn !mb-0 !text-center" id="tool-redo-btn" type="button">Redo</button>
+            </div>
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-2 block">SVG Asset</label>
+            <select id="svg-asset-picker">
+                <option value="{{ url_for('static', filename='assets/svg/apps-small-solid-svgrepo-com.svg') }}">Apps Small</option>
+                <option value="{{ url_for('static', filename='assets/svg/table-row-solid-svgrepo-com.svg') }}">Table Row Solid</option>
+                <option value="{{ url_for('static', filename='assets/svg/table-row-properties-svgrepo-com.svg') }}">Table Row Properties</option>
+                <option value="{{ url_for('static', filename='assets/svg/table-svgrepo-com.svg') }}">Table</option>
+            </select>
         </div>
         
         <!-- Properties Panel (Hidden by default, shows when an element is selected) -->
@@ -61,8 +81,21 @@
                 <label>Seats Capacity</label>
                 <input type="number" id="prop-table-seats" min="1" max="20">
                 
-                <label>Radius / Size</label>
+                <label>Radius (Round only)</label>
                 <input type="number" id="prop-table-size" min="10" max="200">
+
+                <label>Length</label>
+                <input type="number" id="prop-table-width" min="10" max="400">
+
+                <label>Width</label>
+                <input type="number" id="prop-table-height" min="10" max="400">
+
+                <label>Shape</label>
+                <select id="prop-table-shape">
+                    <option value="round">Round</option>
+                    <option value="square">Square</option>
+                    <option value="rectangle">Rectangle</option>
+                </select>
                 
                 <button id="btn-delete-element" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Table</button>
             </div>
@@ -79,6 +112,31 @@
                 
                 <button id="btn-delete-line" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Line</button>
             </div>
+
+            <div id="prop-text" class="hidden">
+                <label>Text Content</label>
+                <input type="text" id="prop-text-content" placeholder="Contoh: Kasir">
+                <label>Text Size</label>
+                <input type="number" id="prop-text-size" min="8" max="72">
+                <label>Text Color</label>
+                <input type="color" id="prop-text-color">
+                <button id="btn-delete-text" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Text</button>
+            </div>
+
+            <div id="prop-svg" class="hidden">
+                <label>SVG Asset</label>
+                <select id="prop-svg-src">
+                    <option value="{{ url_for('static', filename='assets/svg/apps-small-solid-svgrepo-com.svg') }}">Apps Small</option>
+                    <option value="{{ url_for('static', filename='assets/svg/table-row-solid-svgrepo-com.svg') }}">Table Row Solid</option>
+                    <option value="{{ url_for('static', filename='assets/svg/table-row-properties-svgrepo-com.svg') }}">Table Row Properties</option>
+                    <option value="{{ url_for('static', filename='assets/svg/table-svgrepo-com.svg') }}">Table</option>
+                </select>
+                <label>Width</label>
+                <input type="number" id="prop-svg-width" min="12" max="300">
+                <label>Height</label>
+                <input type="number" id="prop-svg-height" min="12" max="300">
+                <button id="btn-delete-svg" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete SVG Asset</button>
+            </div>
         </div>
         
         <div class="mt-auto">
@@ -92,8 +150,32 @@
         <svg id="designer-canvas" xmlns="http://www.w3.org/2000/svg">
             <!-- Grid definitions can go here -->
             <g id="lines-layer"></g>
+            <g id="assets-layer"></g>
+            <g id="texts-layer"></g>
             <g id="tables-layer"></g>
         </svg>
+    </div>
+
+    <!-- SVG Asset Popup -->
+    <div id="svg-popup-panel" class="svg-popup hidden">
+        <div class="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Drag SVG ke Map</div>
+        <div class="svg-popup-item" draggable="true" data-src="{{ url_for('static', filename='assets/svg/apps-small-solid-svgrepo-com.svg') }}">
+            <img src="{{ url_for('static', filename='assets/svg/apps-small-solid-svgrepo-com.svg') }}" alt="Apps Small">
+            <span class="text-sm text-gray-700 font-medium">Apps Small</span>
+        </div>
+        <div class="svg-popup-item" draggable="true" data-src="{{ url_for('static', filename='assets/svg/table-row-solid-svgrepo-com.svg') }}">
+            <img src="{{ url_for('static', filename='assets/svg/table-row-solid-svgrepo-com.svg') }}" alt="Table Row Solid">
+            <span class="text-sm text-gray-700 font-medium">Table Row Solid</span>
+        </div>
+        <div class="svg-popup-item" draggable="true" data-src="{{ url_for('static', filename='assets/svg/table-row-properties-svgrepo-com.svg') }}">
+            <img src="{{ url_for('static', filename='assets/svg/table-row-properties-svgrepo-com.svg') }}" alt="Table Row Properties">
+            <span class="text-sm text-gray-700 font-medium">Table Row Properties</span>
+        </div>
+        <div class="svg-popup-item" draggable="true" data-src="{{ url_for('static', filename='assets/svg/table-svgrepo-com.svg') }}">
+            <img src="{{ url_for('static', filename='assets/svg/table-svgrepo-com.svg') }}" alt="Table">
+            <span class="text-sm text-gray-700 font-medium">Table</span>
+        </div>
+        <p class="text-[11px] text-gray-500 mt-1">Tips: pilih tool <b>Add SVG Asset</b>, lalu drag item SVG ke area map.</p>
     </div>
 
     <!-- Save Confirmation Modal -->
@@ -120,7 +202,7 @@
 
     <script>
         const svgns = "http://www.w3.org/2000/svg";
-        let currentTool = 'select'; // 'select', 'draw-line', 'add-table'
+        let currentTool = 'select'; // 'select', 'draw-line', 'add-table', 'add-text', 'add-svg'
         let selectedElement = null;
         
         // Drawing Line State
@@ -130,44 +212,175 @@
         // Dragging State
         let isDragging = false;
         let dragTarget = null;
+        let dragChanged = false;
         let offset = { x: 0, y: 0 };
+        let isMarqueeSelecting = false;
+        let marqueeStart = { x: 0, y: 0 };
+        let marqueeRect = null;
+        let multiSelected = []; // [{type, id}]
+        let isGroupDragging = false;
+        let groupDragChanged = false;
+        let groupDragStart = { x: 0, y: 0 };
+        let groupInitial = [];
+        let skipNextCanvasClickDeselect = false;
+        let historyStack = [];
+        let redoStack = [];
+        let isApplyingHistory = false;
+        let refreshDesignerView = null;
         
         // Element Tracking
         let elements = {
             lines: [],
-            tables: []
+            tables: [],
+            texts: [],
+            assets: []
         };
+        let selectedSvgAssetSrc = '';
+
+        function cloneElementsState(state) {
+            return JSON.parse(JSON.stringify(state || { lines: [], tables: [], texts: [], assets: [] }));
+        }
+
+        function pushHistoryState() {
+            if (isApplyingHistory) return;
+            historyStack.push(cloneElementsState(elements));
+            if (historyStack.length > 100) historyStack.shift();
+            redoStack = [];
+            updateUndoRedoButtons();
+        }
+
+        function updateUndoRedoButtons() {
+            const canUndo = historyStack.length > 0;
+            const canRedo = redoStack.length > 0;
+            $('#tool-undo-btn').prop('disabled', !canUndo).css('opacity', canUndo ? '1' : '0.5');
+            $('#tool-redo-btn').prop('disabled', !canRedo).css('opacity', canRedo ? '1' : '0.5');
+        }
+
+        function applyUndo() {
+            if (historyStack.length === 0) return;
+            isApplyingHistory = true;
+            redoStack.push(cloneElementsState(elements));
+            elements = cloneElementsState(historyStack.pop());
+            if (typeof refreshDesignerView === 'function') {
+                refreshDesignerView();
+            }
+            isApplyingHistory = false;
+            updateUndoRedoButtons();
+        }
+
+        function applyRedo() {
+            if (redoStack.length === 0) return;
+            isApplyingHistory = true;
+            historyStack.push(cloneElementsState(elements));
+            elements = cloneElementsState(redoStack.pop());
+            if (typeof refreshDesignerView === 'function') {
+                refreshDesignerView();
+            }
+            isApplyingHistory = false;
+            updateUndoRedoButtons();
+        }
 
         $(document).ready(function() {
             // Load existing plan
             $.get("/admin/api/floor_plan", function(res) {
                 if(res.ok && res.data) {
-                    elements = res.data;
+                    elements = res.data || {};
+                    if (!Array.isArray(elements.lines)) elements.lines = [];
+                    if (!Array.isArray(elements.tables)) elements.tables = [];
+                    if (!Array.isArray(elements.texts)) elements.texts = [];
+                    if (!Array.isArray(elements.assets)) elements.assets = [];
                     // Backward compatibility: old data may only have "label".
                     (elements.tables || []).forEach(function(table) {
                         if (!table.table_name) {
                             table.table_name = table.label || '';
                         }
+                        if (!table.shape) {
+                            table.shape = 'round';
+                        }
+                        if (!table.width) {
+                            table.width = (table.r || 25) * 2;
+                        }
+                        if (!table.height) {
+                            table.height = (table.r || 25) * 2;
+                        }
                     });
                     renderCanvas();
+                    historyStack = [];
+                    redoStack = [];
+                    updateUndoRedoButtons();
+                }
+            });
+
+            $('#tool-undo-btn').on('click', function() { applyUndo(); });
+            $('#tool-redo-btn').on('click', function() { applyRedo(); });
+            updateUndoRedoButtons();
+
+            $(document).on('keydown', function(e) {
+                const key = String(e.key || '').toLowerCase();
+                if (e.ctrlKey && !e.shiftKey && key === 'z') {
+                    e.preventDefault();
+                    applyUndo();
+                } else if ((e.ctrlKey && key === 'y') || (e.ctrlKey && e.shiftKey && key === 'z')) {
+                    e.preventDefault();
+                    applyRedo();
                 }
             });
 
             // Tool Selection
             $('.tool-btn').click(function() {
+                const btnId = $(this).attr('id') || '';
+                if (btnId === 'tool-undo-btn' || btnId === 'tool-redo-btn') {
+                    return;
+                }
                 $('.tool-btn').removeClass('active');
                 $(this).addClass('active');
                 currentTool = $(this).attr('id').replace('tool-', '');
                 deselectAll();
+                toggleSvgPopup();
                 
                 if (currentTool === 'draw-line') {
                     $('#designer-canvas').css('cursor', 'crosshair');
                 } else if (currentTool === 'add-table') {
                     $('#designer-canvas').css('cursor', 'copy');
+                } else if (currentTool === 'add-text' || currentTool === 'add-svg') {
+                    $('#designer-canvas').css('cursor', 'copy');
                 } else {
                     $('#designer-canvas').css('cursor', 'default');
                 }
             });
+
+            // Bridge for undo/redo functions declared outside this ready scope.
+            refreshDesignerView = function() {
+                renderCanvas();
+                deselectAll();
+            };
+
+            function toggleSvgPopup() {
+                if (currentTool === 'add-svg') {
+                    $('#svg-popup-panel').removeClass('hidden');
+                } else {
+                    $('#svg-popup-panel').addClass('hidden');
+                }
+            }
+
+            // Drag source from right SVG popup
+            $('.svg-popup-item').on('dragstart', function(e) {
+                const src = $(this).data('src') || '';
+                e.originalEvent.dataTransfer.setData('text/plain', src);
+            });
+
+            // Click-to-select asset from right SVG popup (no need drag-drop)
+            $('.svg-popup-item').on('click', function() {
+                $('.svg-popup-item').removeClass('active');
+                $(this).addClass('active');
+                selectedSvgAssetSrc = $(this).data('src') || '';
+            });
+            // default selected asset
+            const firstSvgItem = $('.svg-popup-item').first();
+            if (firstSvgItem.length > 0) {
+                firstSvgItem.addClass('active');
+                selectedSvgAssetSrc = firstSvgItem.data('src') || '';
+            }
 
             // SVG Interaction
             const svgElement = document.getElementById('designer-canvas');
@@ -180,10 +393,89 @@
                 };
             }
 
+            function addSvgAt(pos) {
+                pushHistoryState();
+                const activeSrc = $('.svg-popup-item.active').attr('data-src') || '';
+                const pickerSrc = $('#svg-asset-picker').val() || '';
+                const src = selectedSvgAssetSrc || activeSrc || pickerSrc;
+                if (!src) {
+                    alert('Pilih SVG dulu dari panel kanan.');
+                    return;
+                }
+                const svgAsset = {
+                    id: 'svg_' + Date.now(),
+                    src: src,
+                    x: pos.x,
+                    y: pos.y,
+                    width: 48,
+                    height: 48
+                };
+                elements.assets.push(svgAsset);
+                renderCanvas();
+                selectElement(svgAsset, 'svg');
+            }
+
+            function isMultiSelected(type, id) {
+                return multiSelected.some(x => x.type === type && x.id === id);
+            }
+
+            function highlightMultiSelection() {
+                multiSelected.forEach(sel => {
+                    if (sel.type === 'table') {
+                        $(`#${sel.id} .table-shape`).addClass('table-selected');
+                    } else if (sel.type === 'line') {
+                        $(`#${sel.id}`).addClass('arch-line-selected');
+                    } else if (sel.type === 'text') {
+                        $(`#${sel.id}`).attr('stroke', '#02308E').attr('stroke-width', '1');
+                    } else if (sel.type === 'svg') {
+                        $(`#${sel.id}`).attr('opacity', '0.75');
+                    }
+                });
+            }
+
+            function getTableBounds(table) {
+                const shape = table.shape || 'round';
+                if (shape === 'square') {
+                    const side = (table.r || 25) * 2;
+                    return { x1: table.cx - side / 2, y1: table.cy - side / 2, x2: table.cx + side / 2, y2: table.cy + side / 2 };
+                }
+                if (shape === 'rectangle') {
+                    const w = table.width || ((table.r || 25) * 2.6);
+                    const h = table.height || ((table.r || 25) * 1.5);
+                    return { x1: table.cx - w / 2, y1: table.cy - h / 2, x2: table.cx + w / 2, y2: table.cy + h / 2 };
+                }
+                const r = table.r || 25;
+                return { x1: table.cx - r, y1: table.cy - r, x2: table.cx + r, y2: table.cy + r };
+            }
+
+            function startGroupDrag(pos) {
+                pushHistoryState();
+                isGroupDragging = true;
+                groupDragChanged = false;
+                groupDragStart = { x: pos.x, y: pos.y };
+                groupInitial = [];
+                multiSelected.forEach(sel => {
+                    if (sel.type === 'table') {
+                        const item = (elements.tables || []).find(t => t.id === sel.id);
+                        if (item) groupInitial.push({ type: 'table', id: item.id, cx: item.cx, cy: item.cy });
+                    } else if (sel.type === 'line') {
+                        const item = (elements.lines || []).find(l => l.id === sel.id);
+                        if (item) groupInitial.push({ type: 'line', id: item.id, x1: item.x1, y1: item.y1, x2: item.x2, y2: item.y2 });
+                    } else if (sel.type === 'text') {
+                        const item = (elements.texts || []).find(t => t.id === sel.id);
+                        if (item) groupInitial.push({ type: 'text', id: item.id, x: item.x, y: item.y });
+                    } else if (sel.type === 'svg') {
+                        const item = (elements.assets || []).find(a => a.id === sel.id);
+                        if (item) groupInitial.push({ type: 'svg', id: item.id, x: item.x, y: item.y });
+                    }
+                });
+            }
+
             $(svgElement).mousedown(function(e) {
                 const pos = getMousePosition(e);
                 
                 if (currentTool === 'draw-line') {
+                    pushHistoryState();
                     isDrawing = true;
                     const lineId = 'line_' + Date.now();
                     const line = {
@@ -195,9 +487,11 @@
                     currentLine = line;
                     renderCanvas();
                 } else if (currentTool === 'add-table') {
+                    pushHistoryState();
                     const tableId = 'T' + (elements.tables.length + 1);
                     const table = {
-                        id: tableId, label: tableId, table_name: '', seats: 2,
+                        id: tableId, label: tableId, table_name: '', seats: 2, shape: 'round',
+                        width: 50, height: 50,
                         cx: pos.x, cy: pos.y, r: 25
                     };
                     elements.tables.push(table);
@@ -206,9 +500,78 @@
                     
                     // Switch back to select tool after dropping a table
                     $('#tool-select').click();
+                } else if (currentTool === 'add-text') {
+                    pushHistoryState();
+                    const textNode = {
+                        id: 'text_' + Date.now(),
+                        text: 'Teks Baru',
+                        x: pos.x,
+                        y: pos.y,
+                        size: 16,
+                        color: '#111827'
+                    };
+                    elements.texts.push(textNode);
+                    renderCanvas();
+                    selectElement(textNode, 'text');
+                    $('#tool-select').click();
+                } else if (currentTool === 'add-svg') {
+                    // handled by click fallback below to avoid duplicate insert
                 } else if (currentTool === 'select') {
-                    // Handled by elements' own event listeners
+                    // Box selection when dragging on empty canvas
+                    if (e.target === svgElement) {
+                        deselectAll();
+                        multiSelected = [];
+                        isMarqueeSelecting = true;
+                        marqueeStart = { x: pos.x, y: pos.y };
+                        marqueeRect = document.createElementNS(svgns, 'rect');
+                        marqueeRect.setAttribute('id', 'marquee-rect');
+                        marqueeRect.setAttribute('x', pos.x);
+                        marqueeRect.setAttribute('y', pos.y);
+                        marqueeRect.setAttribute('width', 0);
+                        marqueeRect.setAttribute('height', 0);
+                        marqueeRect.setAttribute('fill', 'rgba(2,48,142,0.12)');
+                        marqueeRect.setAttribute('stroke', '#02308E');
+                        marqueeRect.setAttribute('stroke-dasharray', '4,4');
+                        svgElement.appendChild(marqueeRect);
+                    }
                 }
+            });
+
+            // Click-to-place fallback (more reliable than mousedown on some browsers)
+            $(svgElement).click(function(e) {
+                if (currentTool !== 'add-svg') return;
+                if (skipNextCanvasClickDeselect) {
+                    skipNextCanvasClickDeselect = false;
+                    return;
+                }
+                const pos = getMousePosition(e);
+                addSvgAt(pos);
+            });
+
+            // Allow drag-drop SVG assets into map area
+            svgElement.addEventListener('dragover', function(e) {
+                if (currentTool !== 'add-svg') return;
+                e.preventDefault();
+            });
+
+            svgElement.addEventListener('drop', function(e) {
+                if (currentTool !== 'add-svg') return;
+                e.preventDefault();
+                const src = e.dataTransfer.getData('text/plain');
+                if (!src) return;
+                pushHistoryState();
+                const pos = getMousePosition(e);
+                const svgAsset = {
+                    id: 'svg_' + Date.now(),
+                    src: src,
+                    x: pos.x,
+                    y: pos.y,
+                    width: 48,
+                    height: 48
+                };
+                elements.assets.push(svgAsset);
+                renderCanvas();
+                selectElement(svgAsset, 'svg');
             });
 
             $(svgElement).mousemove(function(e) {
@@ -218,10 +581,66 @@
                     currentLine.x2 = pos.x;
                     currentLine.y2 = pos.y;
                     updateLineNode(currentLine);
+                } else if (isMarqueeSelecting && marqueeRect) {
+                    const x = Math.min(marqueeStart.x, pos.x);
+                    const y = Math.min(marqueeStart.y, pos.y);
+                    const w = Math.abs(pos.x - marqueeStart.x);
+                    const h = Math.abs(pos.y - marqueeStart.y);
+                    marqueeRect.setAttribute('x', x);
+                    marqueeRect.setAttribute('y', y);
+                    marqueeRect.setAttribute('width', w);
+                    marqueeRect.setAttribute('height', h);
+                } else if (isGroupDragging) {
+                    const dx = pos.x - groupDragStart.x;
+                    const dy = pos.y - groupDragStart.y;
+                    if (dx !== 0 || dy !== 0) groupDragChanged = true;
+                    groupInitial.forEach(g => {
+                        if (g.type === 'table') {
+                            const item = (elements.tables || []).find(t => t.id === g.id);
+                            if (item) { item.cx = g.cx + dx; item.cy = g.cy + dy; updateTableNode(item); }
+                        } else if (g.type === 'line') {
+                            const item = (elements.lines || []).find(l => l.id === g.id);
+                            if (item) {
+                                item.x1 = g.x1 + dx; item.y1 = g.y1 + dy;
+                                item.x2 = g.x2 + dx; item.y2 = g.y2 + dy;
+                                updateLineNode(item);
+                            }
+                        } else if (g.type === 'text') {
+                            const item = (elements.texts || []).find(t => t.id === g.id);
+                            if (item) { item.x = g.x + dx; item.y = g.y + dy; updateTextNode(item); }
+                        } else if (g.type === 'svg') {
+                            const item = (elements.assets || []).find(a => a.id === g.id);
+                            if (item) { item.x = g.x + dx; item.y = g.y + dy; updateSvgNode(item); }
+                        }
+                    });
                 } else if (isDragging && dragTarget) {
-                    dragTarget.cx = pos.x - offset.x;
-                    dragTarget.cy = pos.y - offset.y;
-                    updateTableNode(dragTarget);
+                    if (dragTarget._type === 'table') {
+                        dragTarget.cx = pos.x - offset.x;
+                        dragTarget.cy = pos.y - offset.y;
+                        dragChanged = true;
+                        updateTableNode(dragTarget);
+                    } else if (dragTarget._type === 'text') {
+                        dragTarget.x = pos.x - offset.x;
+                        dragTarget.y = pos.y - offset.y;
+                        dragChanged = true;
+                        updateTextNode(dragTarget);
+                    } else if (dragTarget._type === 'svg') {
+                        dragTarget.x = pos.x - offset.x;
+                        dragTarget.y = pos.y - offset.y;
+                        dragChanged = true;
+                        updateSvgNode(dragTarget);
+                    } else if (dragTarget._type === 'line') {
+                        const dx = dragTarget._lineDx || 0;
+                        const dy = dragTarget._lineDy || 0;
+                        const nx1 = pos.x - offset.x;
+                        const ny1 = pos.y - offset.y;
+                        dragTarget.x1 = nx1;
+                        dragTarget.y1 = ny1;
+                        dragTarget.x2 = nx1 + dx;
+                        dragTarget.y2 = ny1 + dy;
+                        dragChanged = true;
+                        updateLineNode(dragTarget);
+                    }
                 }
             });
 
@@ -230,20 +649,93 @@
                     isDrawing = false;
                     currentLine = null;
                 }
+                if (isMarqueeSelecting) {
+                    isMarqueeSelecting = false;
+                    if (marqueeRect) {
+                        const x = parseFloat(marqueeRect.getAttribute('x')) || 0;
+                        const y = parseFloat(marqueeRect.getAttribute('y')) || 0;
+                        const w = parseFloat(marqueeRect.getAttribute('width')) || 0;
+                        const h = parseFloat(marqueeRect.getAttribute('height')) || 0;
+                        const x2 = x + w;
+                        const y2 = y + h;
+                        marqueeRect.remove();
+                        marqueeRect = null;
+                        if (w > 4 && h > 4) {
+                            multiSelected = [];
+                            const isIntersect = function(bx1, by1, bx2, by2) {
+                                return !(bx2 < x || bx1 > x2 || by2 < y || by1 > y2);
+                            };
+                            (elements.tables || []).forEach(t => {
+                                const b = getTableBounds(t);
+                                if (isIntersect(b.x1, b.y1, b.x2, b.y2)) {
+                                    multiSelected.push({ type: 'table', id: t.id });
+                                }
+                            });
+                            (elements.lines || []).forEach(l => {
+                                const bx1 = Math.min(l.x1, l.x2) - 4;
+                                const by1 = Math.min(l.y1, l.y2) - 4;
+                                const bx2 = Math.max(l.x1, l.x2) + 4;
+                                const by2 = Math.max(l.y1, l.y2) + 4;
+                                if (isIntersect(bx1, by1, bx2, by2)) {
+                                    multiSelected.push({ type: 'line', id: l.id });
+                                }
+                            });
+                            (elements.texts || []).forEach(t => {
+                                const tx = t.x || 0;
+                                const ty = t.y || 0;
+                                const fs = t.size || 16;
+                                const tw = Math.max(14, (String(t.text || '').length * fs * 0.55));
+                                const th = fs;
+                                const bx1 = tx - (tw / 2);
+                                const by1 = ty - th;
+                                const bx2 = tx + (tw / 2);
+                                const by2 = ty + (th * 0.3);
+                                if (isIntersect(bx1, by1, bx2, by2)) {
+                                    multiSelected.push({ type: 'text', id: t.id });
+                                }
+                            });
+                            (elements.assets || []).forEach(a => {
+                                const aw = a.width || 48, ah = a.height || 48;
+                                const ax1 = (a.x || 0) - (aw / 2), ay1 = (a.y || 0) - (ah / 2);
+                                const ax2 = ax1 + aw, ay2 = ay1 + ah;
+                                if (isIntersect(ax1, ay1, ax2, ay2)) {
+                                    multiSelected.push({ type: 'svg', id: a.id });
+                                }
+                            });
+                            renderCanvas();
+                            highlightMultiSelection();
+                            skipNextCanvasClickDeselect = true;
+                        }
+                    }
+                }
+                if (isGroupDragging) {
+                    isGroupDragging = false;
+                    groupDragChanged = false;
+                    groupInitial = [];
+                }
                 if (isDragging) {
                     isDragging = false;
+                    dragChanged = false;
                     dragTarget = null;
                 }
             });
 
             // Save properties on input change
-            $('#prop-table input').on('input', function() {
+            $('#prop-table input, #prop-table select').on('input change', function() {
                 if(selectedElement && selectedElement.type === 'table') {
+                    pushHistoryState();
                     const tableName = $('#prop-table-name').val() || '';
                     selectedElement.data.label = selectedElement.data.id; // keep legacy key synced to ID
                     selectedElement.data.table_name = tableName;
                     selectedElement.data.seats = parseInt($('#prop-table-seats').val());
                     selectedElement.data.r = parseInt($('#prop-table-size').val());
+                    selectedElement.data.shape = $('#prop-table-shape').val() || 'round';
+                    selectedElement.data.width = parseInt($('#prop-table-width').val()) || ((selectedElement.data.r || 25) * 2);
+                    selectedElement.data.height = parseInt($('#prop-table-height').val()) || ((selectedElement.data.r || 25) * 2);
+                    if (selectedElement.data.shape === 'square') {
+                        selectedElement.data.height = (selectedElement.data.r || 25) * 2;
+                        selectedElement.data.width = (selectedElement.data.r || 25) * 2;
+                    }
                     renderCanvas();
                     selectElement(selectedElement.data, 'table');
                 }
@@ -251,6 +743,7 @@
 
             $('#prop-line input').on('input', function() {
                 if(selectedElement && selectedElement.type === 'line') {
+                    pushHistoryState();
                     selectedElement.data.width = parseInt($('#prop-line-width').val());
                     selectedElement.data.stroke = $('#prop-line-color').val();
                     selectedElement.data.dash = $('#prop-line-dash').val();
@@ -258,12 +751,37 @@
                 }
             });
 
-            $('#btn-delete-element, #btn-delete-line').click(function() {
+            $('#prop-text input').on('input', function() {
+                if(selectedElement && selectedElement.type === 'text') {
+                    pushHistoryState();
+                    selectedElement.data.text = $('#prop-text-content').val() || '';
+                    selectedElement.data.size = parseInt($('#prop-text-size').val()) || 16;
+                    selectedElement.data.color = $('#prop-text-color').val() || '#111827';
+                    updateTextNode(selectedElement.data);
+                }
+            });
+
+            $('#prop-svg input, #prop-svg select').on('input change', function() {
+                if(selectedElement && selectedElement.type === 'svg') {
+                    pushHistoryState();
+                    selectedElement.data.src = $('#prop-svg-src').val() || selectedElement.data.src;
+                    selectedElement.data.width = parseInt($('#prop-svg-width').val()) || 48;
+                    selectedElement.data.height = parseInt($('#prop-svg-height').val()) || 48;
+                    updateSvgNode(selectedElement.data);
+                }
+            });
+
+            $('#btn-delete-element, #btn-delete-line, #btn-delete-text, #btn-delete-svg').click(function() {
                 if(selectedElement) {
+                    pushHistoryState();
                     if(selectedElement.type === 'table') {
                         elements.tables = elements.tables.filter(t => t.id !== selectedElement.data.id);
                     } else if(selectedElement.type === 'line') {
                         elements.lines = elements.lines.filter(l => l.id !== selectedElement.data.id);
+                    } else if(selectedElement.type === 'text') {
+                        elements.texts = elements.texts.filter(t => t.id !== selectedElement.data.id);
+                    } else if(selectedElement.type === 'svg') {
+                        elements.assets = elements.assets.filter(a => a.id !== selectedElement.data.id);
                     }
                     deselectAll();
                     renderCanvas();
@@ -315,8 +833,12 @@
             // Rendering Logic
             function renderCanvas() {
                 const linesLayer = document.getElementById('lines-layer');
+                const assetsLayer = document.getElementById('assets-layer');
+                const textsLayer = document.getElementById('texts-layer');
                 const tablesLayer = document.getElementById('tables-layer');
                 linesLayer.innerHTML = '';
+                assetsLayer.innerHTML = '';
+                textsLayer.innerHTML = '';
                 tablesLayer.innerHTML = '';
 
                 elements.lines.forEach(line => {
@@ -328,24 +850,130 @@
                     $(lineNode).mousedown(function(e) {
                         if(currentTool === 'select') {
                             e.stopPropagation();
-                            selectElement(line, 'line');
+                            const pos = getMousePosition(e);
+                            if (isMultiSelected('line', line.id) && multiSelected.length > 1) {
+                                startGroupDrag(pos);
+                            } else {
+                                multiSelected = [];
+                                selectElement(line, 'line');
+                                pushHistoryState();
+                                isDragging = true;
+                                dragChanged = false;
+                                dragTarget = line;
+                                dragTarget._type = 'line';
+                                dragTarget._lineDx = (line.x2 || 0) - (line.x1 || 0);
+                                dragTarget._lineDy = (line.y2 || 0) - (line.y1 || 0);
+                                offset.x = pos.x - (line.x1 || 0);
+                                offset.y = pos.y - (line.y1 || 0);
+                            }
                         }
                     });
                     
                     linesLayer.appendChild(lineNode);
                 });
 
+                (elements.assets || []).forEach(asset => {
+                    const img = document.createElementNS(svgns, 'image');
+                    img.setAttribute('id', asset.id);
+                    img.setAttribute('class', 'svg-asset-node');
+                    img.setAttribute('x', (asset.x || 0) - ((asset.width || 48) / 2));
+                    img.setAttribute('y', (asset.y || 0) - ((asset.height || 48) / 2));
+                    img.setAttribute('width', asset.width || 48);
+                    img.setAttribute('height', asset.height || 48);
+                    img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', asset.src || '');
+
+                    $(img).mousedown(function(e) {
+                        if(currentTool === 'select') {
+                            e.stopPropagation();
+                            const pos = getMousePosition(e);
+                            if (isMultiSelected('svg', asset.id) && multiSelected.length > 1) {
+                                startGroupDrag(pos);
+                            } else {
+                                multiSelected = [];
+                                selectElement(asset, 'svg');
+                                pushHistoryState();
+                                isDragging = true;
+                                dragChanged = false;
+                                dragTarget = asset;
+                                dragTarget._type = 'svg';
+                                offset.x = pos.x - (asset.x || 0);
+                                offset.y = pos.y - (asset.y || 0);
+                            }
+                        }
+                    });
+
+                    assetsLayer.appendChild(img);
+                });
+
+                (elements.texts || []).forEach(textNode => {
+                    const tx = document.createElementNS(svgns, 'text');
+                    tx.setAttribute('id', textNode.id);
+                    tx.setAttribute('class', 'text-node');
+                    tx.setAttribute('x', textNode.x || 0);
+                    tx.setAttribute('y', textNode.y || 0);
+                    tx.setAttribute('font-size', textNode.size || 16);
+                    tx.setAttribute('font-weight', '600');
+                    tx.setAttribute('fill', textNode.color || '#111827');
+                    tx.textContent = textNode.text || '';
+
+                    $(tx).mousedown(function(e) {
+                        if(currentTool === 'select') {
+                            e.stopPropagation();
+                            const pos = getMousePosition(e);
+                            if (isMultiSelected('text', textNode.id) && multiSelected.length > 1) {
+                                startGroupDrag(pos);
+                            } else {
+                                multiSelected = [];
+                                selectElement(textNode, 'text');
+                                pushHistoryState();
+                                isDragging = true;
+                                dragChanged = false;
+                                dragTarget = textNode;
+                                dragTarget._type = 'text';
+                                offset.x = pos.x - (textNode.x || 0);
+                                offset.y = pos.y - (textNode.y || 0);
+                            }
+                        }
+                    });
+
+                    textsLayer.appendChild(tx);
+                });
+
                 elements.tables.forEach(table => {
+                    if (!table.shape) table.shape = 'round';
+                    if (!table.width) table.width = (table.r || 25) * 2;
+                    if (!table.height) table.height = (table.r || 25) * 2;
                     const g = document.createElementNS(svgns, 'g');
                     g.setAttribute('id', table.id);
                     g.setAttribute('class', 'table-node');
                     g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
                     
-                    const circle = document.createElementNS(svgns, 'circle');
-                    circle.setAttribute('r', table.r);
-                    circle.setAttribute('fill', '#E6E2DD'); // Cream
-                    circle.setAttribute('stroke', '#033187'); // Dark Blue
-                    circle.setAttribute('stroke-width', '2');
+                    let shapeNode = null;
+                    if (table.shape === 'square') {
+                        shapeNode = document.createElementNS(svgns, 'rect');
+                        const side = (table.r || 25) * 2;
+                        shapeNode.setAttribute('x', -side / 2);
+                        shapeNode.setAttribute('y', -side / 2);
+                        shapeNode.setAttribute('width', side);
+                        shapeNode.setAttribute('height', side);
+                        shapeNode.setAttribute('rx', 4);
+                    } else if (table.shape === 'rectangle') {
+                        shapeNode = document.createElementNS(svgns, 'rect');
+                        const rw = table.width || ((table.r || 25) * 2.6);
+                        const rh = table.height || ((table.r || 25) * 1.5);
+                        shapeNode.setAttribute('x', -rw / 2);
+                        shapeNode.setAttribute('y', -rh / 2);
+                        shapeNode.setAttribute('width', rw);
+                        shapeNode.setAttribute('height', rh);
+                        shapeNode.setAttribute('rx', 6);
+                    } else {
+                        shapeNode = document.createElementNS(svgns, 'circle');
+                        shapeNode.setAttribute('r', table.r);
+                    }
+                    shapeNode.setAttribute('class', 'table-shape');
+                    shapeNode.setAttribute('fill', '#E6E2DD'); // Cream
+                    shapeNode.setAttribute('stroke', '#033187'); // Dark Blue
+                    shapeNode.setAttribute('stroke-width', '2');
                     
                     const text = document.createElementNS(svgns, 'text');
                     text.setAttribute('text-anchor', 'middle');
@@ -364,21 +992,28 @@
                     subtext.setAttribute('y', '15');
                     subtext.textContent = `(${table.seats} pax)`;
 
-                    g.appendChild(circle);
+                    g.appendChild(shapeNode);
                     g.appendChild(text);
                     g.appendChild(subtext);
                     
                     $(g).mousedown(function(e) {
                         if(currentTool === 'select') {
                             e.stopPropagation();
-                            selectElement(table, 'table');
-                            
-                            // Start dragging
-                            isDragging = true;
-                            dragTarget = table;
                             const pos = getMousePosition(e);
-                            offset.x = pos.x - table.cx;
-                            offset.y = pos.y - table.cy;
+                            if (isMultiSelected('table', table.id) && multiSelected.length > 1) {
+                                startGroupDrag(pos);
+                            } else {
+                                multiSelected = [];
+                                selectElement(table, 'table');
+                                pushHistoryState();
+                                // Start dragging
+                                isDragging = true;
+                                dragChanged = false;
+                                dragTarget = table;
+                                dragTarget._type = 'table';
+                                offset.x = pos.x - table.cx;
+                                offset.y = pos.y - table.cy;
+                            }
                         }
                     });
                     
@@ -388,7 +1023,11 @@
                 // Re-apply selection visuals if something is selected
                 if(selectedElement) {
                     if(selectedElement.type === 'table') {
-                        $(`#${selectedElement.data.id} circle`).addClass('table-selected');
+                        $(`#${selectedElement.data.id} .table-shape`).addClass('table-selected');
+                    } else if(selectedElement.type === 'text') {
+                        $(`#${selectedElement.data.id}`).attr('stroke', '#02308E').attr('stroke-width', '1');
+                    } else if(selectedElement.type === 'svg') {
+                        $(`#${selectedElement.data.id}`).attr('opacity', '0.75');
                     } else {
                         $(`#${selectedElement.data.id}`).addClass('arch-line-selected');
                     }
@@ -415,10 +1054,65 @@
                 const g = document.getElementById(table.id);
                 if(g) {
                     g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
-                    $(g).find('circle').attr('r', table.r);
+                    const shape = $(g).find('.table-shape')[0];
+                    if (shape) {
+                        if (table.shape === 'square' || table.shape === 'rectangle') {
+                            if (shape.tagName.toLowerCase() !== 'rect') {
+                                renderCanvas();
+                                return;
+                            }
+                            if (table.shape === 'square') {
+                                const side = (table.r || 25) * 2;
+                                shape.setAttribute('x', -side / 2);
+                                shape.setAttribute('y', -side / 2);
+                                shape.setAttribute('width', side);
+                                shape.setAttribute('height', side);
+                                shape.setAttribute('rx', 4);
+                            } else {
+                                const rw = table.r * 2.6;
+                                const rh = table.r * 1.5;
+                                shape.setAttribute('x', -rw / 2);
+                                shape.setAttribute('y', -rh / 2);
+                                shape.setAttribute('width', rw);
+                                shape.setAttribute('height', rh);
+                                shape.setAttribute('rx', 6);
+                            }
+                        } else {
+                            if (shape.tagName.toLowerCase() !== 'circle') {
+                                renderCanvas();
+                                return;
+                            }
+                            shape.setAttribute('r', table.r);
+                        }
+                    }
                     const displayName = (table.table_name || '').trim() || table.id;
                     $(g).find('text').eq(0).text(displayName);
-                    $(g).find('text').eq(1).text(`(${table.seats} pax)`).attr('y', table.r * 0.6);
+                    const subY = (table.shape === 'round')
+                        ? (table.r * 0.6)
+                        : ((table.height || ((table.r || 25) * 2)) * 0.22);
+                    $(g).find('text').eq(1).text(`(${table.seats} pax)`).attr('y', subY);
+                }
+            }
+
+            function updateTextNode(textNode) {
+                const node = document.getElementById(textNode.id);
+                if (node) {
+                    node.setAttribute('x', textNode.x || 0);
+                    node.setAttribute('y', textNode.y || 0);
+                    node.setAttribute('font-size', textNode.size || 16);
+                    node.setAttribute('fill', textNode.color || '#111827');
+                    node.textContent = textNode.text || '';
+                }
+            }
+
+            function updateSvgNode(asset) {
+                const node = document.getElementById(asset.id);
+                if (node) {
+                    node.setAttribute('x', (asset.x || 0) - ((asset.width || 48) / 2));
+                    node.setAttribute('y', (asset.y || 0) - ((asset.height || 48) / 2));
+                    node.setAttribute('width', asset.width || 48);
+                    node.setAttribute('height', asset.height || 48);
+                    node.setAttributeNS('http://www.w3.org/1999/xlink', 'href', asset.src || '');
                 }
             }
 
@@ -429,7 +1123,7 @@
                 $('#properties-panel').removeClass('hidden');
                 
                 if (type === 'table') {
-                    $(`#${data.id} circle`).addClass('table-selected');
+                    $(`#${data.id} .table-shape`).addClass('table-selected');
                     $('#prop-table').removeClass('hidden');
                     $('#prop-line').addClass('hidden');
                     
@@ -437,26 +1131,65 @@
                     $('#prop-table-name').val(data.table_name || '');
                     $('#prop-table-seats').val(data.seats);
                     $('#prop-table-size').val(data.r);
+                    $('#prop-table-shape').val(data.shape || 'round');
+                    $('#prop-table-width').val(data.width || ((data.r || 25) * 2));
+                    $('#prop-table-height').val(data.height || ((data.r || 25) * 2));
+                    const isRound = (data.shape || 'round') === 'round';
+                    const isSquare = (data.shape || 'round') === 'square';
+                    $('#prop-table-size').prop('disabled', !(isRound || isSquare)).css('background', (isRound || isSquare) ? '#fff' : '#f3f4f6');
+                    $('#prop-table-width').prop('disabled', isSquare).css('background', isSquare ? '#f3f4f6' : '#fff');
+                    $('#prop-table-height').prop('disabled', isSquare).css('background', isSquare ? '#f3f4f6' : '#fff');
+                    $('#prop-text').addClass('hidden');
+                    $('#prop-svg').addClass('hidden');
                 } else if (type === 'line') {
                     $(`#${data.id}`).addClass('arch-line-selected');
                     $('#prop-line').removeClass('hidden');
                     $('#prop-table').addClass('hidden');
+                    $('#prop-text').addClass('hidden');
+                    $('#prop-svg').addClass('hidden');
                     
                     $('#prop-line-width').val(data.width);
                     $('#prop-line-color').val(data.stroke);
                     $('#prop-line-dash').val(data.dash || '');
+                } else if (type === 'text') {
+                    $(`#${data.id}`).attr('stroke', '#02308E').attr('stroke-width', '1');
+                    $('#prop-text').removeClass('hidden');
+                    $('#prop-table').addClass('hidden');
+                    $('#prop-line').addClass('hidden');
+                    $('#prop-svg').addClass('hidden');
+
+                    $('#prop-text-content').val(data.text || '');
+                    $('#prop-text-size').val(data.size || 16);
+                    $('#prop-text-color').val(data.color || '#111827');
+                } else if (type === 'svg') {
+                    $(`#${data.id}`).attr('opacity', '0.75');
+                    $('#prop-svg').removeClass('hidden');
+                    $('#prop-table').addClass('hidden');
+                    $('#prop-line').addClass('hidden');
+                    $('#prop-text').addClass('hidden');
+
+                    $('#prop-svg-src').val(data.src || '');
+                    $('#prop-svg-width').val(data.width || 48);
+                    $('#prop-svg-height').val(data.height || 48);
                 }
             }
 
             function deselectAll() {
                 $('.table-selected').removeClass('table-selected');
                 $('.arch-line-selected').removeClass('arch-line-selected');
+                $('.text-node').removeAttr('stroke').removeAttr('stroke-width');
+                $('.svg-asset-node').attr('opacity', '1');
                 selectedElement = null;
+                multiSelected = [];
                 $('#properties-panel').addClass('hidden');
             }
             
             $(svgElement).click(function(e) {
                 if(currentTool === 'select' && e.target === svgElement) {
+                    if (skipNextCanvasClickDeselect) {
+                        skipNextCanvasClickDeselect = false;
+                        return;
+                    }
                     deselectAll();
                 }
             });

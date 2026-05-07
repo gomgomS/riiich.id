@@ -84,26 +84,26 @@
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .table-available circle {
+    .table-available .table-shape {
         fill: #E6E2DD;
         stroke: #033187;
         stroke-width: 2;
     }
 
-    .table-available:hover circle {
+    .table-available:hover .table-shape {
         fill: #DFE1E7;
         stroke-width: 4;
         filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
     }
 
-    .table-reserved circle {
+    .table-reserved .table-shape {
         fill: #fee2e2;
         stroke: #ef4444;
         stroke-width: 2;
         cursor: not-allowed;
     }
 
-    .table-occupied circle {
+    .table-occupied .table-shape {
         fill: #ede9fe;
         stroke: #7c3aed;
         stroke-width: 2;
@@ -114,7 +114,7 @@
         fill: #4c1d95 !important;
     }
 
-    .table-selected circle {
+    .table-selected .table-shape {
         fill: #02308E !important;
         stroke: #033187 !important;
         stroke-width: 4 !important;
@@ -358,6 +358,8 @@
                     <svg id="visual-map" xmlns="http://www.w3.org/2000/svg"
                         style="display:block; cursor:grab; user-select:none; flex-shrink:0;">
                         <g id="map-lines"></g>
+                        <g id="map-assets"></g>
+                        <g id="map-texts"></g>
                         <g id="map-tables"></g>
                     </svg>
                     </div>
@@ -700,12 +702,16 @@
 
     function renderMap() {
         const linesLayer = document.getElementById('map-lines');
+        const assetsLayer = document.getElementById('map-assets');
+        const textsLayer = document.getElementById('map-texts');
         const tablesLayer = document.getElementById('map-tables');
         const svgEl = document.getElementById('visual-map');
         const emptyState = document.getElementById('map-empty-state');
-        if (!linesLayer || !tablesLayer || !svgEl) return;
+        if (!linesLayer || !tablesLayer || !svgEl || !assetsLayer || !textsLayer) return;
 
         linesLayer.innerHTML = '';
+        assetsLayer.innerHTML = '';
+        textsLayer.innerHTML = '';
         tablesLayer.innerHTML = '';
 
         const hasLines = floorPlanData.lines && floorPlanData.lines.length > 0;
@@ -743,8 +749,49 @@
             });
         }
 
+        if (floorPlanData.assets && floorPlanData.assets.length > 0) {
+            floorPlanData.assets.forEach(asset => {
+                const img = document.createElementNS(svgns, 'image');
+                const w = asset.width || 48;
+                const h = asset.height || 48;
+                const x = asset.x || 0;
+                const y = asset.y || 0;
+                img.setAttribute('x', x - (w / 2));
+                img.setAttribute('y', y - (h / 2));
+                img.setAttribute('width', w);
+                img.setAttribute('height', h);
+                img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', asset.src || '');
+                img.style.pointerEvents = 'none'; // customer can only see
+                assetsLayer.appendChild(img);
+                expandBounds(x - (w / 2), y - (h / 2));
+                expandBounds(x + (w / 2), y + (h / 2));
+            });
+        }
+
+        if (floorPlanData.texts && floorPlanData.texts.length > 0) {
+            floorPlanData.texts.forEach(textNode => {
+                const tx = document.createElementNS(svgns, 'text');
+                tx.setAttribute('x', textNode.x || 0);
+                tx.setAttribute('y', textNode.y || 0);
+                tx.setAttribute('font-size', textNode.size || 16);
+                tx.setAttribute('font-weight', '600');
+                tx.setAttribute('fill', textNode.color || '#111827');
+                tx.textContent = textNode.text || '';
+                tx.style.pointerEvents = 'none'; // customer can only see
+                textsLayer.appendChild(tx);
+
+                const size = textNode.size || 16;
+                const textLen = (textNode.text || '').length;
+                expandBounds((textNode.x || 0) - Math.max(12, textLen * (size * 0.35)), (textNode.y || 0) - size);
+                expandBounds((textNode.x || 0) + Math.max(12, textLen * (size * 0.35)), (textNode.y || 0) + size);
+            });
+        }
+
         if (hasTables) {
             floorPlanData.tables.forEach(table => {
+                if (!table.shape) table.shape = 'round';
+                if (!table.width) table.width = (table.r || 25) * 2;
+                if (!table.height) table.height = (table.r || 25) * 2;
                 const g = document.createElementNS(svgns, 'g');
                 g.setAttribute('id', table.id);
                 g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
@@ -755,8 +802,29 @@
 
                 g.setAttribute('class', `table-node ${statusClass}`);
 
-                const circle = document.createElementNS(svgns, 'circle');
-                circle.setAttribute('r', table.r);
+                let shapeNode = null;
+                if (table.shape === 'square') {
+                    shapeNode = document.createElementNS(svgns, 'rect');
+                    const side = (table.r || 25) * 2;
+                    shapeNode.setAttribute('x', -side / 2);
+                    shapeNode.setAttribute('y', -side / 2);
+                    shapeNode.setAttribute('width', side);
+                    shapeNode.setAttribute('height', side);
+                    shapeNode.setAttribute('rx', 4);
+                } else if (table.shape === 'rectangle') {
+                    shapeNode = document.createElementNS(svgns, 'rect');
+                    const rw = table.width || ((table.r || 25) * 2.6);
+                    const rh = table.height || ((table.r || 25) * 1.5);
+                    shapeNode.setAttribute('x', -rw / 2);
+                    shapeNode.setAttribute('y', -rh / 2);
+                    shapeNode.setAttribute('width', rw);
+                    shapeNode.setAttribute('height', rh);
+                    shapeNode.setAttribute('rx', 6);
+                } else {
+                    shapeNode = document.createElementNS(svgns, 'circle');
+                    shapeNode.setAttribute('r', table.r);
+                }
+                shapeNode.setAttribute('class', 'table-shape');
 
                 // Table label (centered)
                 const text = document.createElementNS(svgns, 'text');
@@ -779,7 +847,7 @@
                 capText.setAttribute('y', '7');
                 capText.textContent = '\u{1F465} ' + capacity;
 
-                g.appendChild(circle);
+                g.appendChild(shapeNode);
                 g.appendChild(text);
                 g.appendChild(capText);
 
@@ -808,9 +876,19 @@
 
                 tablesLayer.appendChild(g);
                 const r = table.r || 30;
+                let halfW = r;
+                let halfH = r;
+                if (table.shape === 'square') {
+                    const side = r * 2;
+                    halfW = side / 2;
+                    halfH = side / 2;
+                } else if (table.shape === 'rectangle') {
+                    halfW = (table.width || (r * 2.6)) / 2;
+                    halfH = (table.height || (r * 1.5)) / 2;
+                }
                 // Include label/sub-label visual area so top-most tables are not clipped.
-                expandBounds(table.cx - r - 4, table.cy - r - 22);
-                expandBounds(table.cx + r + 4, table.cy + r + 18);
+                expandBounds(table.cx - halfW - 6, table.cy - halfH - 22);
+                expandBounds(table.cx + halfW + 6, table.cy + halfH + 18);
             });
         }
 
@@ -849,6 +927,7 @@
         const toast = document.getElementById('drag-toast');
         let isPanning = false, startX = 0, startY = 0;
         let panX = 0, panY = 0;
+        const PAN_EDGE_BUFFER = 80; // allow reaching very top/bottom edges comfortably
 
         // Only show toast if content is larger than container
         function showToastIfNeeded() {
@@ -869,9 +948,13 @@
             const cH = container.clientHeight;
             const maxPanX = Math.max(0, contentW - cW);
             const maxPanY = Math.max(0, contentH - cH);
+            const minX = -(maxPanX + PAN_EDGE_BUFFER);
+            const maxX = PAN_EDGE_BUFFER;
+            const minY = -(maxPanY + PAN_EDGE_BUFFER);
+            const maxY = PAN_EDGE_BUFFER;
             return {
-                x: Math.min(0, Math.max(-maxPanX, x)),
-                y: Math.min(0, Math.max(-maxPanY, y))
+                x: Math.min(maxX, Math.max(minX, x)),
+                y: Math.min(maxY, Math.max(minY, y))
             };
         }
 
