@@ -9,150 +9,336 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; margin: 0; overflow: hidden; }
-        .toolbar { width: 250px; background: white; height: 100vh; border-right: 1px solid #e5e7eb; padding: 20px; overflow-y: auto; }
         .canvas-container { flex-grow: 1; height: 100vh; position: relative; background-image: radial-gradient(#d1d5db 1px, transparent 1px); background-size: 20px 20px; background-color: #ffffff; overflow: auto; }
         svg { width: 2000px; height: 2000px; display: block; cursor: crosshair; }
-        
-        .tool-btn { display: block; width: 100%; text-align: left; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; transition: all 0.2s; }
-        .tool-btn:hover { background: #f3f4f6; }
-        .tool-btn.active { background: #033187; color: white; border-color: #033187; }
-        
-        /* Table Styles */
+
+        /* Toolbar */
+        .toolbar { width: 272px; flex-shrink: 0; background: #fff; height: 100vh; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; overflow: hidden; box-shadow: 2px 0 12px rgba(0,0,0,.06); }
+        .toolbar-body { flex: 1; overflow-y: auto; padding: 16px; }
+        .toolbar-body::-webkit-scrollbar { width: 4px; }
+        .toolbar-body::-webkit-scrollbar-track { background: transparent; }
+        .toolbar-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+
+        /* Section labels */
+        .section-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .section-label::after { content:''; flex:1; height:1px; background:#f3f4f6; }
+
+        /* Tool buttons — icon+label style */
+        .tool-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; transition: all 0.15s; font-size: 13px; font-weight: 500; color: #374151; }
+        .tool-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: #033187; }
+        .tool-btn.active { background: #033187; color: #fff; border-color: #033187; box-shadow: 0 2px 8px rgba(3,49,135,.25); }
+        .tool-btn.active svg { stroke: #fff; }
+        .tool-btn svg { width: 16px; height: 16px; flex-shrink: 0; stroke: #6b7280; transition: stroke .15s; }
+        .tool-btn:hover svg { stroke: #033187; }
+        .tool-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* History buttons */
+        .hist-btn { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; transition: all .15s; font-size: 12px; font-weight: 600; color: #374151; }
+        .hist-btn:hover { background: #f3f4f6; }
+        .hist-btn:disabled { opacity: .35; cursor: not-allowed; }
+        .hist-btn svg { width: 14px; height: 14px; stroke: #6b7280; }
+
+        /* Prop inputs */
+        .prop-input { width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; background: #fff; color: #111827; outline: none; transition: border-color .15s; margin-bottom: 0; }
+        .prop-input:focus { border-color: #033187; box-shadow: 0 0 0 3px rgba(3,49,135,.08); }
+        .prop-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+        .prop-label { display: block; font-size: 11px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+        .prop-row { margin-bottom: 10px; }
+
+        /* Table Styles (SVG) */
         .table-node { cursor: grab; transition: stroke 0.2s; }
         .table-node:active { cursor: grabbing; }
         .table-selected { stroke: #02308E; stroke-width: 3px; stroke-dasharray: 5,5; }
         .text-node { cursor: grab; }
         .svg-asset-node { cursor: grab; }
-        
-        /* Architectural Lines */
         .arch-line { cursor: pointer; }
         .arch-line-selected { stroke: red !important; stroke-width: 4px !important; }
-        
-        .prop-group { margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 15px; }
-        .prop-group label { display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 5px; }
-        .prop-group input, .prop-group select { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
-        
-        #save-btn { background: #10b981; color: white; border: none; font-weight: bold; width: 100%; padding: 12px; border-radius: 8px; cursor: pointer; margin-top: 20px; }
-        #save-btn:hover { background: #059669; }
-        .svg-popup { position: fixed; top: 84px; right: 16px; width: 280px; max-height: calc(100vh - 120px); overflow-y: auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: 12px; z-index: 40; }
-        .svg-popup-item { display: flex; align-items: center; gap: 10px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px; margin-bottom: 8px; cursor: grab; background: #f9fafb; }
+
+        /* SVG popup (right panel) */
+        .svg-popup { position: fixed; top: 60px; right: 16px; width: 260px; max-height: calc(100vh - 80px); overflow-y: auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: 12px; z-index: 40; }
+        .svg-popup-item { display: flex; align-items: center; gap: 10px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px; margin-bottom: 8px; cursor: grab; background: #f9fafb; transition: all .15s; }
+        .svg-popup-item:hover { background: #eff6ff; border-color: #93c5fd; }
         .svg-popup-item:active { cursor: grabbing; }
         .svg-popup-item img { width: 32px; height: 32px; object-fit: contain; pointer-events: none; }
         .svg-popup-item.active { border-color: #02308E; background: #eff6ff; box-shadow: inset 0 0 0 1px rgba(2,48,142,.2); }
+
+        /* Layer order btns */
+        .layer-btn { display: flex; align-items: center; gap: 6px; flex: 1; padding: 7px 8px; border-radius: 6px; border: 1px solid #e5e7eb; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; justify-content: center; }
+        .layer-btn-front { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .layer-btn-front:hover { background: #dbeafe; }
+        .layer-btn-back { background: #f9fafb; color: #374151; border-color: #e5e7eb; }
+        .layer-btn-back:hover { background: #f3f4f6; }
+
+        /* Danger btn */
+        .danger-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #fca5a5; background: #fef2f2; color: #dc2626; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+        .danger-btn:hover { background: #fee2e2; border-color: #f87171; }
+
+        /* Sidebar drawer behavior for mobile */
+        #designer-sidebar-backdrop { display: none; }
+        #designer-sidebar-toggle { display: none; }
+        @media (max-width: 767px) {
+            .toolbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 40;
+                transform: translateX(-100%);
+                transition: transform .2s ease;
+            }
+            .toolbar.sidebar-open {
+                transform: translateX(0);
+            }
+            #designer-sidebar-backdrop {
+                position: fixed;
+                inset: 0;
+                z-index: 30;
+                background: rgba(17, 24, 39, .45);
+            }
+            #designer-sidebar-backdrop.show { display: block; }
+            #designer-sidebar-toggle {
+                position: fixed;
+                top: 12px;
+                left: 12px;
+                z-index: 50;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                border: 1px solid #d1d5db;
+                background: #fff;
+                color: #033187;
+                box-shadow: 0 2px 8px rgba(0,0,0,.12);
+            }
+        }
     </style>
 </head>
 <body class="flex">
+    <button id="designer-sidebar-toggle" type="button" title="Toggle Sidebar">
+        <svg id="designer-sidebar-icon-open" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg id="designer-sidebar-icon-close" class="hidden" style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
 
     <!-- Sidebar Toolbar -->
-    <div class="toolbar shadow-xl z-10 flex flex-col">
-        <h2 class="text-xl font-bold text-gray-800 mb-6">Floor Designer</h2>
-        
-        <div class="mb-4">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tools</h3>
-            <button class="tool-btn active" id="tool-select">Pointer (Select/Move)</button>
-            <button class="tool-btn" id="tool-draw-line">Draw Wall / Bar</button>
-            <button class="tool-btn" id="tool-add-table">Add Table</button>
-            <button class="tool-btn" id="tool-add-text">Add Text</button>
-            <button class="tool-btn" id="tool-add-svg">Add SVG Asset</button>
-            <div class="grid grid-cols-2 gap-2 mt-2">
-                <button class="tool-btn !mb-0 !text-center" id="tool-undo-btn" type="button">Undo</button>
-                <button class="tool-btn !mb-0 !text-center" id="tool-redo-btn" type="button">Redo</button>
+    <div id="designer-toolbar" class="toolbar z-10">
+
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#033187 0%,#02308E 100%);padding:18px 16px 14px;flex-shrink:0;">
+            <div class="flex items-center gap-3 mb-1">
+                <div style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg style="width:18px;height:18px;stroke:#fff;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:15px;font-weight:700;color:#fff;line-height:1.2;">Floor Designer</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:1px;">Renrich Admin</div>
+                </div>
             </div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-2 block">SVG Asset</label>
-            <select id="svg-asset-picker">
+        </div>
+
+        <!-- Scrollable body -->
+        <div class="toolbar-body">
+
+            <!-- Drawing Tools -->
+            <div class="mb-4">
+                <div class="section-label">Drawing Tools</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <button class="tool-btn active" id="tool-select">
+                        <svg viewBox="0 0 24 24" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/></svg>
+                        <span>Select / Move</span>
+                    </button>
+                    <button class="tool-btn" id="tool-draw-line">
+                        <svg viewBox="0 0 24 24" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20L20 4"/><circle cx="4" cy="20" r="2" stroke-width="2"/><circle cx="20" cy="4" r="2" stroke-width="2"/></svg>
+                        <span>Draw Wall / Bar</span>
+                    </button>
+                    <button class="tool-btn" id="tool-add-table">
+                        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke-width="2" stroke-linecap="round"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v8M8 12h8"/></svg>
+                        <span>Add Table</span>
+                    </button>
+                    <button class="tool-btn" id="tool-add-text">
+                        <svg viewBox="0 0 24 24" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7V5h16v2M9 5v14m6-14v14M9 19h6"/></svg>
+                        <span>Add Text Label</span>
+                    </button>
+                    <button class="tool-btn" id="tool-add-svg">
+                        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9h18M9 21V9"/></svg>
+                        <span>Add SVG Asset</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- History -->
+            <div class="mb-4">
+                <div class="section-label">History</div>
+                <div style="display:flex;gap:8px;">
+                    <button class="hist-btn" id="tool-undo-btn" type="button">
+                        <svg viewBox="0 0 24 24" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                        Undo
+                    </button>
+                    <button class="hist-btn" id="tool-redo-btn" type="button">
+                        <svg viewBox="0 0 24 24" fill="none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/></svg>
+                        Redo
+                    </button>
+                </div>
+            </div>
+
+            <!-- SVG Asset picker (hidden select, used as fallback) -->
+            <select id="svg-asset-picker" style="display:none;">
                 <option value="{{ url_for('static', filename='assets/svg/apps-small-solid-svgrepo-com.svg') }}">Apps Small</option>
                 <option value="{{ url_for('static', filename='assets/svg/table-row-solid-svgrepo-com.svg') }}">Table Row Solid</option>
                 <option value="{{ url_for('static', filename='assets/svg/table-row-properties-svgrepo-com.svg') }}">Table Row Properties</option>
                 <option value="{{ url_for('static', filename='assets/svg/table-svgrepo-com.svg') }}">Table</option>
             </select>
+
+            <!-- Properties Panel -->
+            <div id="properties-panel" class="hidden">
+                <div class="section-label">Properties</div>
+
+                <!-- Layer order (always visible in panel) -->
+                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                    <button id="btn-send-front" type="button" class="layer-btn layer-btn-front">
+                        <svg style="width:12px;height:12px;stroke:currentColor;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7 7 7M12 3v14"/></svg>
+                        Front
+                    </button>
+                    <button id="btn-send-back" type="button" class="layer-btn layer-btn-back">
+                        <svg style="width:12px;height:12px;stroke:currentColor;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7-7-7M12 21V7"/></svg>
+                        Back
+                    </button>
+                </div>
+
+                <!-- Table Properties -->
+                <div id="prop-table" class="hidden">
+                    <div style="background:#f0f4ff;border:1px solid #c7d7fc;border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+                        <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Table ID</div>
+                        <input type="text" id="prop-table-id" class="prop-input" readonly style="background:#e8edf8;color:#6b7280;cursor:not-allowed;font-size:13px;font-weight:600;">
+                    </div>
+                    <div class="prop-row">
+                        <label class="prop-label">Display Name</label>
+                        <input type="text" id="prop-table-name" class="prop-input" placeholder="contoh: Kursi VIP, Meja 2">
+                    </div>
+                    <div class="prop-row">
+                        <label class="prop-label">Shape</label>
+                        <select id="prop-table-shape" class="prop-input">
+                            <option value="round">⭕ Round</option>
+                            <option value="square">🔲 Square</option>
+                            <option value="rectangle">▬ Rectangle</option>
+                        </select>
+                    </div>
+                    <div class="prop-row">
+                        <label class="prop-label">Radius <span style="color:#9ca3af;">(Round / Square)</span></label>
+                        <input type="number" id="prop-table-size" class="prop-input" min="10" max="200">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div>
+                            <label class="prop-label">Length</label>
+                            <input type="number" id="prop-table-width" class="prop-input" min="10" max="400">
+                        </div>
+                        <div>
+                            <label class="prop-label">Width</label>
+                            <input type="number" id="prop-table-height" class="prop-input" min="10" max="400">
+                        </div>
+                    </div>
+                    <div class="prop-row">
+                        <label class="prop-label">Seat Capacity</label>
+                        <input type="number" id="prop-table-seats" class="prop-input" min="1" max="20">
+                    </div>
+                    <button id="btn-delete-element" class="danger-btn mt-2">
+                        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Delete Table
+                    </button>
+                </div>
+
+                <!-- Line Properties -->
+                <div id="prop-line" class="hidden">
+                    <div class="prop-row">
+                        <label class="prop-label">Stroke Width</label>
+                        <input type="number" id="prop-line-width" class="prop-input" min="1" max="20">
+                    </div>
+                    <div class="prop-row">
+                        <label class="prop-label">Stroke Color</label>
+                        <input type="color" id="prop-line-color" class="prop-input" style="height:38px;padding:4px 6px;">
+                    </div>
+                    <div class="prop-row">
+                        <label class="prop-label">Dash Pattern <span style="color:#9ca3af;">(e.g. 5,5)</span></label>
+                        <input type="text" id="prop-line-dash" class="prop-input" placeholder="Leave empty for solid">
+                    </div>
+                    <button id="btn-delete-line" class="danger-btn mt-2">
+                        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Delete Line
+                    </button>
+                </div>
+
+                <!-- Text Properties -->
+                <div id="prop-text" class="hidden">
+                    <div class="prop-row">
+                        <label class="prop-label">Text Content</label>
+                        <input type="text" id="prop-text-content" class="prop-input" placeholder="Contoh: Kasir, Area VIP">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div>
+                            <label class="prop-label">Font Size</label>
+                            <input type="number" id="prop-text-size" class="prop-input" min="8" max="72">
+                        </div>
+                        <div>
+                            <label class="prop-label">Color</label>
+                            <input type="color" id="prop-text-color" class="prop-input" style="height:38px;padding:4px 6px;">
+                        </div>
+                    </div>
+                    <button id="btn-delete-text" class="danger-btn">
+                        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Delete Text
+                    </button>
+                </div>
+
+                <!-- SVG Asset Properties -->
+                <div id="prop-svg" class="hidden">
+                    <div class="prop-row">
+                        <label class="prop-label">Asset</label>
+                        <select id="prop-svg-src" class="prop-input">
+                            <option value="{{ url_for('static', filename='assets/svg/apps-small-solid-svgrepo-com.svg') }}">Apps Small</option>
+                            <option value="{{ url_for('static', filename='assets/svg/table-row-solid-svgrepo-com.svg') }}">Table Row Solid</option>
+                            <option value="{{ url_for('static', filename='assets/svg/table-row-properties-svgrepo-com.svg') }}">Table Row Properties</option>
+                            <option value="{{ url_for('static', filename='assets/svg/table-svgrepo-com.svg') }}">Table</option>
+                        </select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div>
+                            <label class="prop-label">Width</label>
+                            <input type="number" id="prop-svg-width" class="prop-input" min="12" max="300">
+                        </div>
+                        <div>
+                            <label class="prop-label">Height</label>
+                            <input type="number" id="prop-svg-height" class="prop-input" min="12" max="300">
+                        </div>
+                    </div>
+                    <button id="btn-delete-svg" class="danger-btn">
+                        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Delete Asset
+                    </button>
+                </div>
+            </div>
+
+        </div><!-- /toolbar-body -->
+
+        <!-- Footer: Save -->
+        <div style="padding:14px 16px;border-top:1px solid #f3f4f6;flex-shrink:0;background:#fff;">
+            <button id="save-btn" style="width:100%;background:#10b981;color:#fff;border:none;font-weight:700;font-size:14px;padding:11px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;">
+                <svg style="width:16px;height:16px;stroke:#fff;fill:none;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                Save Floor Plan
+            </button>
+            <a href="/admin/dashboard" style="display:block;text-align:center;margin-top:10px;font-size:12px;color:#9ca3af;text-decoration:none;transition:color .15s;" onmouseover="this.style.color='#374151'" onmouseout="this.style.color='#9ca3af'">
+                ← Back to Dashboard
+            </a>
         </div>
-        
-        <!-- Properties Panel (Hidden by default, shows when an element is selected) -->
-        <div id="properties-panel" class="prop-group hidden">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Properties</h3>
-            
-            <div id="prop-table" class="hidden">
-                <label>Table ID (Unique Code, e.g. T1, T2)</label>
-                <input type="text" id="prop-table-id" readonly style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;">
 
-                <label>Table Name (shown to users, boleh pakai spasi)</label>
-                <input type="text" id="prop-table-name" placeholder="contoh: Kursi 2, VIP Indoor">
-                
-                <label>Seats Capacity</label>
-                <input type="number" id="prop-table-seats" min="1" max="20">
-                
-                <label>Radius (Round only)</label>
-                <input type="number" id="prop-table-size" min="10" max="200">
-
-                <label>Length</label>
-                <input type="number" id="prop-table-width" min="10" max="400">
-
-                <label>Width</label>
-                <input type="number" id="prop-table-height" min="10" max="400">
-
-                <label>Shape</label>
-                <select id="prop-table-shape">
-                    <option value="round">Round</option>
-                    <option value="square">Square</option>
-                    <option value="rectangle">Rectangle</option>
-                </select>
-                
-                <button id="btn-delete-element" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Table</button>
-            </div>
-            
-            <div id="prop-line" class="hidden">
-                <label>Stroke Width</label>
-                <input type="number" id="prop-line-width" min="1" max="20">
-                
-                <label>Stroke Color</label>
-                <input type="color" id="prop-line-color">
-                
-                <label>Dash Array (e.g. "5,5")</label>
-                <input type="text" id="prop-line-dash">
-                
-                <button id="btn-delete-line" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Line</button>
-            </div>
-
-            <div id="prop-text" class="hidden">
-                <label>Text Content</label>
-                <input type="text" id="prop-text-content" placeholder="Contoh: Kasir">
-                <label>Text Size</label>
-                <input type="number" id="prop-text-size" min="8" max="72">
-                <label>Text Color</label>
-                <input type="color" id="prop-text-color">
-                <button id="btn-delete-text" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete Text</button>
-            </div>
-
-            <div id="prop-svg" class="hidden">
-                <label>SVG Asset</label>
-                <select id="prop-svg-src">
-                    <option value="{{ url_for('static', filename='assets/svg/apps-small-solid-svgrepo-com.svg') }}">Apps Small</option>
-                    <option value="{{ url_for('static', filename='assets/svg/table-row-solid-svgrepo-com.svg') }}">Table Row Solid</option>
-                    <option value="{{ url_for('static', filename='assets/svg/table-row-properties-svgrepo-com.svg') }}">Table Row Properties</option>
-                    <option value="{{ url_for('static', filename='assets/svg/table-svgrepo-com.svg') }}">Table</option>
-                </select>
-                <label>Width</label>
-                <input type="number" id="prop-svg-width" min="12" max="300">
-                <label>Height</label>
-                <input type="number" id="prop-svg-height" min="12" max="300">
-                <button id="btn-delete-svg" class="mt-2 w-full bg-red-100 text-red-600 border border-red-300 py-2 rounded font-medium hover:bg-red-200">Delete SVG Asset</button>
-            </div>
-        </div>
-        
-        <div class="mt-auto">
-            <button id="save-btn">Save Floor Plan</button>
-            <a href="/admin/dashboard" class="block text-center mt-3 text-sm text-gray-500 hover:text-gray-800">Back to Dashboard</a>
-        </div>
     </div>
+    <div id="designer-sidebar-backdrop"></div>
 
     <!-- Canvas Area -->
     <div class="canvas-container" id="canvas-wrapper">
         <svg id="designer-canvas" xmlns="http://www.w3.org/2000/svg">
             <!-- Grid definitions can go here -->
-            <g id="lines-layer"></g>
-            <g id="assets-layer"></g>
-            <g id="texts-layer"></g>
-            <g id="tables-layer"></g>
+            <g id="objects-layer"></g>
         </svg>
     </div>
 
@@ -241,6 +427,53 @@
             return JSON.parse(JSON.stringify(state || { lines: [], tables: [], texts: [], assets: [] }));
         }
 
+        function getAllDrawableItems() {
+            const items = [];
+            (elements.lines || []).forEach(function(line) { items.push({ type: 'line', data: line }); });
+            (elements.assets || []).forEach(function(asset) { items.push({ type: 'svg', data: asset }); });
+            (elements.texts || []).forEach(function(textNode) { items.push({ type: 'text', data: textNode }); });
+            (elements.tables || []).forEach(function(table) { items.push({ type: 'table', data: table }); });
+            return items;
+        }
+
+        function getMaxZ() {
+            let maxZ = 0;
+            getAllDrawableItems().forEach(function(item) {
+                const z = Number(item.data && item.data.z) || 0;
+                if (z > maxZ) maxZ = z;
+            });
+            return maxZ;
+        }
+
+        function getMinZ() {
+            let minZ = 0;
+            let hasAny = false;
+            getAllDrawableItems().forEach(function(item) {
+                const z = Number(item.data && item.data.z) || 0;
+                if (!hasAny) {
+                    minZ = z;
+                    hasAny = true;
+                } else if (z < minZ) {
+                    minZ = z;
+                }
+            });
+            return hasAny ? minZ : 0;
+        }
+
+        function getNextZ() {
+            return getMaxZ() + 1;
+        }
+
+        function ensureAllZIndex() {
+            let seq = 1;
+            getAllDrawableItems().forEach(function(item) {
+                if (typeof item.data.z !== 'number' || Number.isNaN(item.data.z)) {
+                    item.data.z = seq;
+                }
+                seq += 1;
+            });
+        }
+
         function pushHistoryState() {
             if (isApplyingHistory) return;
             historyStack.push(cloneElementsState(elements));
@@ -280,7 +513,53 @@
             updateUndoRedoButtons();
         }
 
+        function applyDesignerSidebarState(isOpen) {
+            const toolbar = document.getElementById('designer-toolbar');
+            const backdrop = document.getElementById('designer-sidebar-backdrop');
+            const iconOpen = document.getElementById('designer-sidebar-icon-open');
+            const iconClose = document.getElementById('designer-sidebar-icon-close');
+            if (!toolbar) return;
+            if (window.innerWidth < 768) {
+                if (isOpen) {
+                    toolbar.classList.add('sidebar-open');
+                    if (backdrop) backdrop.classList.add('show');
+                } else {
+                    toolbar.classList.remove('sidebar-open');
+                    if (backdrop) backdrop.classList.remove('show');
+                }
+            } else {
+                toolbar.classList.add('sidebar-open');
+                if (backdrop) backdrop.classList.remove('show');
+            }
+            if (iconOpen && iconClose) {
+                if (isOpen || window.innerWidth >= 768) {
+                    iconOpen.classList.add('hidden');
+                    iconClose.classList.remove('hidden');
+                } else {
+                    iconClose.classList.add('hidden');
+                    iconOpen.classList.remove('hidden');
+                }
+            }
+        }
+
+        function toggleDesignerSidebar(forceState) {
+            const toolbar = document.getElementById('designer-toolbar');
+            if (!toolbar) return;
+            const currentlyOpen = toolbar.classList.contains('sidebar-open');
+            const next = typeof forceState === 'boolean' ? forceState : !currentlyOpen;
+            applyDesignerSidebarState(next);
+        }
+
         $(document).ready(function() {
+            const toggleBtn = document.getElementById('designer-sidebar-toggle');
+            const backdrop = document.getElementById('designer-sidebar-backdrop');
+            if (toggleBtn) toggleBtn.addEventListener('click', function() { toggleDesignerSidebar(); });
+            if (backdrop) backdrop.addEventListener('click', function() { toggleDesignerSidebar(false); });
+            applyDesignerSidebarState(window.innerWidth >= 768);
+            window.addEventListener('resize', function() {
+                applyDesignerSidebarState(window.innerWidth >= 768);
+            });
+
             // Load existing plan
             $.get("/admin/api/floor_plan", function(res) {
                 if(res.ok && res.data) {
@@ -304,6 +583,7 @@
                             table.height = (table.r || 25) * 2;
                         }
                     });
+                    ensureAllZIndex();
                     renderCanvas();
                     historyStack = [];
                     redoStack = [];
@@ -408,7 +688,8 @@
                     x: pos.x,
                     y: pos.y,
                     width: 48,
-                    height: 48
+                    height: 48,
+                    z: getNextZ()
                 };
                 elements.assets.push(svgAsset);
                 renderCanvas();
@@ -481,7 +762,8 @@
                     const line = {
                         id: lineId,
                         x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y,
-                        stroke: '#4b5563', width: 4, dash: ''
+                        stroke: '#4b5563', width: 4, dash: '',
+                        z: getNextZ()
                     };
                     elements.lines.push(line);
                     currentLine = line;
@@ -492,7 +774,8 @@
                     const table = {
                         id: tableId, label: tableId, table_name: '', seats: 2, shape: 'round',
                         width: 50, height: 50,
-                        cx: pos.x, cy: pos.y, r: 25
+                        cx: pos.x, cy: pos.y, r: 25,
+                        z: getNextZ()
                     };
                     elements.tables.push(table);
                     renderCanvas();
@@ -508,7 +791,8 @@
                         x: pos.x,
                         y: pos.y,
                         size: 16,
-                        color: '#111827'
+                        color: '#111827',
+                        z: getNextZ()
                     };
                     elements.texts.push(textNode);
                     renderCanvas();
@@ -567,7 +851,8 @@
                     x: pos.x,
                     y: pos.y,
                     width: 48,
-                    height: 48
+                    height: 48,
+                    z: getNextZ()
                 };
                 elements.assets.push(svgAsset);
                 renderCanvas();
@@ -771,6 +1056,28 @@
                 }
             });
 
+            $('#btn-send-front').click(function() {
+                if (!(selectedElement && selectedElement.data)) return;
+                const maxZ = getMaxZ();
+                const currentZ = Number(selectedElement.data.z) || 0;
+                if (currentZ >= maxZ) return;
+                pushHistoryState();
+                selectedElement.data.z = maxZ + 1;
+                renderCanvas();
+                selectElement(selectedElement.data, selectedElement.type);
+            });
+
+            $('#btn-send-back').click(function() {
+                if (!(selectedElement && selectedElement.data)) return;
+                const minZ = getMinZ();
+                const currentZ = Number(selectedElement.data.z) || 0;
+                if (currentZ <= minZ) return;
+                pushHistoryState();
+                selectedElement.data.z = minZ - 1;
+                renderCanvas();
+                selectElement(selectedElement.data, selectedElement.type);
+            });
+
             $('#btn-delete-element, #btn-delete-line, #btn-delete-text, #btn-delete-svg').click(function() {
                 if(selectedElement) {
                     pushHistoryState();
@@ -832,192 +1139,177 @@
 
             // Rendering Logic
             function renderCanvas() {
-                const linesLayer = document.getElementById('lines-layer');
-                const assetsLayer = document.getElementById('assets-layer');
-                const textsLayer = document.getElementById('texts-layer');
-                const tablesLayer = document.getElementById('tables-layer');
-                linesLayer.innerHTML = '';
-                assetsLayer.innerHTML = '';
-                textsLayer.innerHTML = '';
-                tablesLayer.innerHTML = '';
-
-                elements.lines.forEach(line => {
-                    const lineNode = document.createElementNS(svgns, 'line');
-                    lineNode.setAttribute('id', line.id);
-                    lineNode.setAttribute('class', 'arch-line');
-                    updateLineNodeData(lineNode, line);
-                    
-                    $(lineNode).mousedown(function(e) {
-                        if(currentTool === 'select') {
-                            e.stopPropagation();
-                            const pos = getMousePosition(e);
-                            if (isMultiSelected('line', line.id) && multiSelected.length > 1) {
-                                startGroupDrag(pos);
-                            } else {
-                                multiSelected = [];
-                                selectElement(line, 'line');
-                                pushHistoryState();
-                                isDragging = true;
-                                dragChanged = false;
-                                dragTarget = line;
-                                dragTarget._type = 'line';
-                                dragTarget._lineDx = (line.x2 || 0) - (line.x1 || 0);
-                                dragTarget._lineDy = (line.y2 || 0) - (line.y1 || 0);
-                                offset.x = pos.x - (line.x1 || 0);
-                                offset.y = pos.y - (line.y1 || 0);
-                            }
-                        }
-                    });
-                    
-                    linesLayer.appendChild(lineNode);
+                ensureAllZIndex();
+                const objectsLayer = document.getElementById('objects-layer');
+                objectsLayer.innerHTML = '';
+                const drawItems = getAllDrawableItems().sort(function(a, b) {
+                    return (Number(a.data.z) || 0) - (Number(b.data.z) || 0);
                 });
 
-                (elements.assets || []).forEach(asset => {
-                    const img = document.createElementNS(svgns, 'image');
-                    img.setAttribute('id', asset.id);
-                    img.setAttribute('class', 'svg-asset-node');
-                    img.setAttribute('x', (asset.x || 0) - ((asset.width || 48) / 2));
-                    img.setAttribute('y', (asset.y || 0) - ((asset.height || 48) / 2));
-                    img.setAttribute('width', asset.width || 48);
-                    img.setAttribute('height', asset.height || 48);
-                    img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', asset.src || '');
-
-                    $(img).mousedown(function(e) {
-                        if(currentTool === 'select') {
-                            e.stopPropagation();
-                            const pos = getMousePosition(e);
-                            if (isMultiSelected('svg', asset.id) && multiSelected.length > 1) {
-                                startGroupDrag(pos);
-                            } else {
-                                multiSelected = [];
-                                selectElement(asset, 'svg');
-                                pushHistoryState();
-                                isDragging = true;
-                                dragChanged = false;
-                                dragTarget = asset;
-                                dragTarget._type = 'svg';
-                                offset.x = pos.x - (asset.x || 0);
-                                offset.y = pos.y - (asset.y || 0);
+                drawItems.forEach(function(item) {
+                    if (item.type === 'line') {
+                        const line = item.data;
+                        const lineNode = document.createElementNS(svgns, 'line');
+                        lineNode.setAttribute('id', line.id);
+                        lineNode.setAttribute('class', 'arch-line');
+                        updateLineNodeData(lineNode, line);
+                        $(lineNode).mousedown(function(e) {
+                            if(currentTool === 'select') {
+                                e.stopPropagation();
+                                const pos = getMousePosition(e);
+                                if (isMultiSelected('line', line.id) && multiSelected.length > 1) {
+                                    startGroupDrag(pos);
+                                } else {
+                                    multiSelected = [];
+                                    selectElement(line, 'line');
+                                    pushHistoryState();
+                                    isDragging = true;
+                                    dragChanged = false;
+                                    dragTarget = line;
+                                    dragTarget._type = 'line';
+                                    dragTarget._lineDx = (line.x2 || 0) - (line.x1 || 0);
+                                    dragTarget._lineDy = (line.y2 || 0) - (line.y1 || 0);
+                                    offset.x = pos.x - (line.x1 || 0);
+                                    offset.y = pos.y - (line.y1 || 0);
+                                }
                             }
-                        }
-                    });
-
-                    assetsLayer.appendChild(img);
-                });
-
-                (elements.texts || []).forEach(textNode => {
-                    const tx = document.createElementNS(svgns, 'text');
-                    tx.setAttribute('id', textNode.id);
-                    tx.setAttribute('class', 'text-node');
-                    tx.setAttribute('x', textNode.x || 0);
-                    tx.setAttribute('y', textNode.y || 0);
-                    tx.setAttribute('font-size', textNode.size || 16);
-                    tx.setAttribute('font-weight', '600');
-                    tx.setAttribute('fill', textNode.color || '#111827');
-                    tx.textContent = textNode.text || '';
-
-                    $(tx).mousedown(function(e) {
-                        if(currentTool === 'select') {
-                            e.stopPropagation();
-                            const pos = getMousePosition(e);
-                            if (isMultiSelected('text', textNode.id) && multiSelected.length > 1) {
-                                startGroupDrag(pos);
-                            } else {
-                                multiSelected = [];
-                                selectElement(textNode, 'text');
-                                pushHistoryState();
-                                isDragging = true;
-                                dragChanged = false;
-                                dragTarget = textNode;
-                                dragTarget._type = 'text';
-                                offset.x = pos.x - (textNode.x || 0);
-                                offset.y = pos.y - (textNode.y || 0);
+                        });
+                        objectsLayer.appendChild(lineNode);
+                    } else if (item.type === 'svg') {
+                        const asset = item.data;
+                        const img = document.createElementNS(svgns, 'image');
+                        img.setAttribute('id', asset.id);
+                        img.setAttribute('class', 'svg-asset-node');
+                        img.setAttribute('x', (asset.x || 0) - ((asset.width || 48) / 2));
+                        img.setAttribute('y', (asset.y || 0) - ((asset.height || 48) / 2));
+                        img.setAttribute('width', asset.width || 48);
+                        img.setAttribute('height', asset.height || 48);
+                        img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', asset.src || '');
+                        $(img).mousedown(function(e) {
+                            if(currentTool === 'select') {
+                                e.stopPropagation();
+                                const pos = getMousePosition(e);
+                                if (isMultiSelected('svg', asset.id) && multiSelected.length > 1) {
+                                    startGroupDrag(pos);
+                                } else {
+                                    multiSelected = [];
+                                    selectElement(asset, 'svg');
+                                    pushHistoryState();
+                                    isDragging = true;
+                                    dragChanged = false;
+                                    dragTarget = asset;
+                                    dragTarget._type = 'svg';
+                                    offset.x = pos.x - (asset.x || 0);
+                                    offset.y = pos.y - (asset.y || 0);
+                                }
                             }
+                        });
+                        objectsLayer.appendChild(img);
+                    } else if (item.type === 'text') {
+                        const textNode = item.data;
+                        const tx = document.createElementNS(svgns, 'text');
+                        tx.setAttribute('id', textNode.id);
+                        tx.setAttribute('class', 'text-node');
+                        tx.setAttribute('x', textNode.x || 0);
+                        tx.setAttribute('y', textNode.y || 0);
+                        tx.setAttribute('font-size', textNode.size || 16);
+                        tx.setAttribute('font-weight', '600');
+                        tx.setAttribute('fill', textNode.color || '#111827');
+                        tx.textContent = textNode.text || '';
+                        $(tx).mousedown(function(e) {
+                            if(currentTool === 'select') {
+                                e.stopPropagation();
+                                const pos = getMousePosition(e);
+                                if (isMultiSelected('text', textNode.id) && multiSelected.length > 1) {
+                                    startGroupDrag(pos);
+                                } else {
+                                    multiSelected = [];
+                                    selectElement(textNode, 'text');
+                                    pushHistoryState();
+                                    isDragging = true;
+                                    dragChanged = false;
+                                    dragTarget = textNode;
+                                    dragTarget._type = 'text';
+                                    offset.x = pos.x - (textNode.x || 0);
+                                    offset.y = pos.y - (textNode.y || 0);
+                                }
+                            }
+                        });
+                        objectsLayer.appendChild(tx);
+                    } else if (item.type === 'table') {
+                        const table = item.data;
+                        if (!table.shape) table.shape = 'round';
+                        if (!table.width) table.width = (table.r || 25) * 2;
+                        if (!table.height) table.height = (table.r || 25) * 2;
+                        const g = document.createElementNS(svgns, 'g');
+                        g.setAttribute('id', table.id);
+                        g.setAttribute('class', 'table-node');
+                        g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
+                        let shapeNode = null;
+                        if (table.shape === 'square') {
+                            shapeNode = document.createElementNS(svgns, 'rect');
+                            const side = (table.r || 25) * 2;
+                            shapeNode.setAttribute('x', -side / 2);
+                            shapeNode.setAttribute('y', -side / 2);
+                            shapeNode.setAttribute('width', side);
+                            shapeNode.setAttribute('height', side);
+                            shapeNode.setAttribute('rx', 4);
+                        } else if (table.shape === 'rectangle') {
+                            shapeNode = document.createElementNS(svgns, 'rect');
+                            const rw = table.width || ((table.r || 25) * 2.6);
+                            const rh = table.height || ((table.r || 25) * 1.5);
+                            shapeNode.setAttribute('x', -rw / 2);
+                            shapeNode.setAttribute('y', -rh / 2);
+                            shapeNode.setAttribute('width', rw);
+                            shapeNode.setAttribute('height', rh);
+                            shapeNode.setAttribute('rx', 6);
+                        } else {
+                            shapeNode = document.createElementNS(svgns, 'circle');
+                            shapeNode.setAttribute('r', table.r);
                         }
-                    });
-
-                    textsLayer.appendChild(tx);
-                });
-
-                elements.tables.forEach(table => {
-                    if (!table.shape) table.shape = 'round';
-                    if (!table.width) table.width = (table.r || 25) * 2;
-                    if (!table.height) table.height = (table.r || 25) * 2;
-                    const g = document.createElementNS(svgns, 'g');
-                    g.setAttribute('id', table.id);
-                    g.setAttribute('class', 'table-node');
-                    g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
-                    
-                    let shapeNode = null;
-                    if (table.shape === 'square') {
-                        shapeNode = document.createElementNS(svgns, 'rect');
-                        const side = (table.r || 25) * 2;
-                        shapeNode.setAttribute('x', -side / 2);
-                        shapeNode.setAttribute('y', -side / 2);
-                        shapeNode.setAttribute('width', side);
-                        shapeNode.setAttribute('height', side);
-                        shapeNode.setAttribute('rx', 4);
-                    } else if (table.shape === 'rectangle') {
-                        shapeNode = document.createElementNS(svgns, 'rect');
-                        const rw = table.width || ((table.r || 25) * 2.6);
-                        const rh = table.height || ((table.r || 25) * 1.5);
-                        shapeNode.setAttribute('x', -rw / 2);
-                        shapeNode.setAttribute('y', -rh / 2);
-                        shapeNode.setAttribute('width', rw);
-                        shapeNode.setAttribute('height', rh);
-                        shapeNode.setAttribute('rx', 6);
-                    } else {
-                        shapeNode = document.createElementNS(svgns, 'circle');
-                        shapeNode.setAttribute('r', table.r);
+                        shapeNode.setAttribute('class', 'table-shape');
+                        shapeNode.setAttribute('fill', '#E6E2DD');
+                        shapeNode.setAttribute('stroke', '#033187');
+                        shapeNode.setAttribute('stroke-width', '2');
+                        const text = document.createElementNS(svgns, 'text');
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('dominant-baseline', 'central');
+                        text.setAttribute('fill', '#033187');
+                        text.setAttribute('font-size', '12px');
+                        text.setAttribute('font-weight', 'bold');
+                        const displayName = (table.table_name || '').trim() || table.id;
+                        text.textContent = displayName;
+                        const subtext = document.createElementNS(svgns, 'text');
+                        subtext.setAttribute('text-anchor', 'middle');
+                        subtext.setAttribute('dominant-baseline', 'central');
+                        subtext.setAttribute('fill', '#4b5563');
+                        subtext.setAttribute('font-size', '10px');
+                        subtext.setAttribute('y', '15');
+                        subtext.textContent = `(${table.seats} pax)`;
+                        g.appendChild(shapeNode);
+                        g.appendChild(text);
+                        g.appendChild(subtext);
+                        $(g).mousedown(function(e) {
+                            if(currentTool === 'select') {
+                                e.stopPropagation();
+                                const pos = getMousePosition(e);
+                                if (isMultiSelected('table', table.id) && multiSelected.length > 1) {
+                                    startGroupDrag(pos);
+                                } else {
+                                    multiSelected = [];
+                                    selectElement(table, 'table');
+                                    pushHistoryState();
+                                    isDragging = true;
+                                    dragChanged = false;
+                                    dragTarget = table;
+                                    dragTarget._type = 'table';
+                                    offset.x = pos.x - table.cx;
+                                    offset.y = pos.y - table.cy;
+                                }
+                            }
+                        });
+                        objectsLayer.appendChild(g);
                     }
-                    shapeNode.setAttribute('class', 'table-shape');
-                    shapeNode.setAttribute('fill', '#E6E2DD'); // Cream
-                    shapeNode.setAttribute('stroke', '#033187'); // Dark Blue
-                    shapeNode.setAttribute('stroke-width', '2');
-                    
-                    const text = document.createElementNS(svgns, 'text');
-                    text.setAttribute('text-anchor', 'middle');
-                    text.setAttribute('dominant-baseline', 'central');
-                    text.setAttribute('fill', '#033187');
-                    text.setAttribute('font-size', '12px');
-                    text.setAttribute('font-weight', 'bold');
-                    const displayName = (table.table_name || '').trim() || table.id;
-                    text.textContent = displayName;
-                    
-                    const subtext = document.createElementNS(svgns, 'text');
-                    subtext.setAttribute('text-anchor', 'middle');
-                    subtext.setAttribute('dominant-baseline', 'central');
-                    subtext.setAttribute('fill', '#4b5563');
-                    subtext.setAttribute('font-size', '10px');
-                    subtext.setAttribute('y', '15');
-                    subtext.textContent = `(${table.seats} pax)`;
-
-                    g.appendChild(shapeNode);
-                    g.appendChild(text);
-                    g.appendChild(subtext);
-                    
-                    $(g).mousedown(function(e) {
-                        if(currentTool === 'select') {
-                            e.stopPropagation();
-                            const pos = getMousePosition(e);
-                            if (isMultiSelected('table', table.id) && multiSelected.length > 1) {
-                                startGroupDrag(pos);
-                            } else {
-                                multiSelected = [];
-                                selectElement(table, 'table');
-                                pushHistoryState();
-                                // Start dragging
-                                isDragging = true;
-                                dragChanged = false;
-                                dragTarget = table;
-                                dragTarget._type = 'table';
-                                offset.x = pos.x - table.cx;
-                                offset.y = pos.y - table.cy;
-                            }
-                        }
-                    });
-                    
-                    tablesLayer.appendChild(g);
                 });
                 
                 // Re-apply selection visuals if something is selected
@@ -1069,8 +1361,8 @@
                                 shape.setAttribute('height', side);
                                 shape.setAttribute('rx', 4);
                             } else {
-                                const rw = table.r * 2.6;
-                                const rh = table.r * 1.5;
+                                const rw = table.width || ((table.r || 25) * 2.6);
+                                const rh = table.height || ((table.r || 25) * 1.5);
                                 shape.setAttribute('x', -rw / 2);
                                 shape.setAttribute('y', -rh / 2);
                                 shape.setAttribute('width', rw);

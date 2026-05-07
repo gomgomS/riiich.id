@@ -8,12 +8,36 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='v2/admin.output.css') }}">
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; }
+        #sidebar-backdrop { display:none; }
+        @media (max-width: 767px) {
+            #admin-sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 40;
+                transform: translateX(-100%);
+                transition: transform .2s ease;
+            }
+            #admin-sidebar.sidebar-open { transform: translateX(0); }
+            #sidebar-backdrop {
+                position: fixed;
+                inset: 0;
+                z-index: 30;
+                background: rgba(17,24,39,.45);
+            }
+            #sidebar-backdrop.show { display:block; }
+        }
+        @media (min-width: 768px) {
+            #admin-sidebar { position: relative; transform: none !important; }
+            #sidebar-backdrop { display:none !important; }
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-gray-100">
 
     <!-- Sidebar -->
-    <aside class="w-64 bg-white shadow-xl flex flex-col h-full hidden md:flex z-20">
+    <aside id="admin-sidebar" class="w-64 bg-white shadow-xl flex flex-col h-full z-20">
         <div class="h-16 flex items-center justify-center border-b border-gray-100">
             <span class="text-2xl font-bold text-[#033187] tracking-wider font-playfair">RENRICH</span>
         </div>
@@ -46,12 +70,19 @@
             </a>
         </div>
     </aside>
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 
     <!-- Main Content Area -->
     <main class="flex-1 flex flex-col h-full relative">
         <!-- Top Header -->
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
-            <div class="flex items-center">
+            <div class="flex items-center gap-3">
+                <button id="toggle-sidebar-btn" onclick="toggleSidebar()"
+                    class="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" title="Open Sidebar">
+                    <svg id="toggle-sidebar-icon-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    <svg id="toggle-sidebar-icon-hide" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <span id="toggle-sidebar-label" class="hidden md:block ml-2">Open Sidebar</span>
+                </button>
                 <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
             </div>
             <div class="flex items-center gap-4">
@@ -87,5 +118,47 @@
         </div>
     </main>
 
+    <script>
+        function applySidebarState(isOpen) {
+            const sidebar = document.getElementById('admin-sidebar');
+            const label = document.getElementById('toggle-sidebar-label');
+            const iconOpen = document.getElementById('toggle-sidebar-icon-open');
+            const iconHide = document.getElementById('toggle-sidebar-icon-hide');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const btn = document.getElementById('toggle-sidebar-btn');
+            if (!sidebar) return;
+            if (window.innerWidth < 768) {
+                if (isOpen) {
+                    sidebar.classList.add('sidebar-open');
+                    if (backdrop) backdrop.classList.add('show');
+                } else {
+                    sidebar.classList.remove('sidebar-open');
+                    if (backdrop) backdrop.classList.remove('show');
+                }
+            } else {
+                sidebar.style.display = isOpen ? 'flex' : 'none';
+            }
+            if (label) label.textContent = isOpen ? 'Hide Sidebar' : 'Open Sidebar';
+            if (iconOpen && iconHide) {
+                if (isOpen) { iconOpen.classList.add('hidden'); iconHide.classList.remove('hidden'); }
+                else { iconHide.classList.add('hidden'); iconOpen.classList.remove('hidden'); }
+            }
+            if (btn) btn.setAttribute('title', isOpen ? 'Hide Sidebar' : 'Open Sidebar');
+        }
+        function toggleSidebar(forceState) {
+            const sidebar = document.getElementById('admin-sidebar');
+            if (!sidebar) return;
+            const isOpen = window.innerWidth < 768
+                ? sidebar.classList.contains('sidebar-open')
+                : sidebar.style.display !== 'none';
+            const next = typeof forceState === 'boolean' ? forceState : !isOpen;
+            applySidebarState(next);
+        }
+        function initSidebarState() { applySidebarState(window.innerWidth >= 768); }
+        document.addEventListener('DOMContentLoaded', function() {
+            initSidebarState();
+            window.addEventListener('resize', initSidebarState);
+        });
+    </script>
 </body>
 </html>

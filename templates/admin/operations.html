@@ -18,16 +18,61 @@
         .badge-reservation { background: #dbeafe; color: #1e3a8a; }
         .badge-takeaway { background: #fef3c7; color: #92400e; }
         .badge-dinein { background: #d1fae5; color: #065f46; }
+
+        /* Mobile: sidebar as overlay drawer (cover content, don't shift layout) */
+        #sidebar-backdrop { display: none; }
+        @media (max-width: 767px) {
+            #admin-sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 40;
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+            }
+            #admin-sidebar.sidebar-open {
+                transform: translateX(0);
+            }
+            #sidebar-backdrop {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                background: rgba(17, 24, 39, 0.45);
+                z-index: 30;
+            }
+            #sidebar-backdrop.show {
+                display: block;
+            }
+        }
+        @media (min-width: 768px) {
+            #admin-sidebar {
+                position: relative;
+                transform: none !important;
+            }
+            #sidebar-backdrop {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-gray-100">
 
     <!-- Sidebar -->
-    <aside id="admin-sidebar" class="w-64 bg-white shadow-xl flex flex-col h-full hidden md:flex z-20">
-        <div class="h-16 flex items-center justify-center border-b border-gray-100">
-            <span class="text-2xl font-bold text-[#033187] tracking-wider font-playfair">RENRICH</span>
+    <aside id="admin-sidebar" class="w-64 bg-white shadow-xl flex flex-col h-full z-20 sidebar-open">
+        <div class="border-b border-gray-100 px-4 py-4">
+            <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-3">
+                <div class="w-9 h-9 rounded-lg bg-[#033187] text-white flex items-center justify-center font-bold text-sm">R</div>
+                <div>
+                    <div class="text-sm font-bold text-[#033187] tracking-wide">RENRICH</div>
+                    <div class="text-[11px] text-gray-500">Admin Console</div>
+                </div>
+            </div>
         </div>
         <div class="p-4 flex-1">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-gray-400 px-2 mb-2">Navigation</div>
             <ul class="space-y-2">
                 <li>
                     <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">
@@ -36,9 +81,12 @@
                     </a>
                 </li>
                 <li>
-                    <a href="/admin/operations" class="flex items-center gap-3 px-4 py-3 bg-[#033187] text-white rounded-lg font-medium shadow-md">
+                    <a href="/admin/operations" class="flex items-center justify-between px-4 py-3 bg-[#033187] text-white rounded-lg font-medium shadow-md">
+                        <span class="flex items-center gap-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                         Live Operations
+                        </span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest bg-white text-[#033187] px-2 py-1 rounded-full">Active</span>
                     </a>
                 </li>
                 <li>
@@ -55,49 +103,61 @@
                 </li>
             </ul>
         </div>
-        <div class="p-4 border-t border-gray-100">
+        <div class="p-4 border-t border-gray-100 bg-gray-50">
             <a href="/admin/logout" class="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg font-medium transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 Logout
             </a>
         </div>
     </aside>
+    <div id="sidebar-backdrop" class="show" onclick="toggleSidebar(false)"></div>
 
     <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col h-full relative">
+    <main class="flex-1 flex flex-col h-full relative" style="min-width:0">
         <!-- Top Header -->
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
-            <div class="flex items-center">
+        <header class="bg-white shadow-sm border-b border-gray-100 px-4 md:px-6 py-3 z-10">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-start gap-3">
                 <button id="toggle-sidebar-btn" onclick="toggleSidebar()"
-                    class="mr-3 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                    Hide Sidebar
+                    class="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" title="Hide Sidebar">
+                    <svg id="toggle-sidebar-icon-open" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                    <svg id="toggle-sidebar-icon-hide" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span id="toggle-sidebar-label" class="hidden md:block ml-2">Hide Sidebar</span>
                 </button>
-                <h1 class="text-xl font-bold text-gray-800">Dashboard Operasional</h1>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-800 leading-none">Dashboard Operasional</h1>
+                    <p class="text-xs text-gray-500 mt-1">Pantau pesanan live, pembayaran, dan alokasi kursi</p>
+                </div>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 md:gap-3">
         <!-- Tombol kosongkan semua kursi -->
                 <button onclick="resetAllTables()"
-                    style="display:inline-flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;"
+                    style="display:inline-flex;align-items:center;gap:8px;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;font-size:12px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;line-height:1.2;"
                     onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'"
                     title="Darurat: kosongkan semua reservasi meja sekaligus">
                     <svg style="width:14px;height:14px;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     Kosongkan Semua Kursi
                 </button>
-                <div class="w-px h-6 bg-gray-200"></div>
-                <div class="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-200">
+                <div class="hidden md:block w-px h-6 bg-gray-200"></div>
+                <div class="hidden md:flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-200">
                     <span class="relative flex h-2.5 w-2.5">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                     </span>
                     <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Sinkron Langsung</span>
                 </div>
-                <div class="h-8 w-px bg-gray-200"></div>
-                <div class="flex items-center gap-2">
+                <div class="hidden md:block h-8 w-px bg-gray-200"></div>
+                <div class="hidden md:flex items-center gap-2">
                     <div class="w-8 h-8 rounded-full bg-[#033187] text-white flex items-center justify-center font-bold text-sm">
                         {{ admin_name[0]|upper if admin_name else 'A' }}
                     </div>
                     <span class="text-sm font-medium text-gray-700">{{ admin_name }}</span>
                 </div>
+            </div>
             </div>
         </header>
 
@@ -116,54 +176,46 @@
         </div>
 
         <!-- Kanban Board -->
-        <div class="p-6 flex-1 overflow-x-auto overflow-y-hidden">
-            <div class="flex gap-6 h-full min-w-max">
-                
+        <div id="kanban-scroll-wrap" class="flex-1 overflow-x-auto overflow-y-hidden p-6">
+            <div class="inline-flex gap-6 h-full min-w-max">
+
                 <!-- Kolom: Belum Bayar / Menunggu Verifikasi -->
-                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                     <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
                         <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Verifikasi Pembayaran</h3>
                         <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-unpaid">0</span>
                     </div>
-                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-unpaid">
-                        <!-- Cards injected via JS -->
-                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-unpaid"></div>
                 </div>
 
-                <!-- Kolom: Antrean Dapur (Pending -> Preparing) -->
-                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                <!-- Kolom: Antrean Dapur -->
+                <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                     <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
                         <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Antrean Dapur</h3>
                         <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-pending">0</span>
                     </div>
-                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-pending">
-                        <!-- Cards injected via JS -->
-                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-pending"></div>
                 </div>
 
-                <!-- Kolom: Sedang Disiapkan (Siap Disajikan) -->
-                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+                <!-- Kolom: Siap Disajikan -->
+                <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                     <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
                         <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Siap Disajikan</h3>
                         <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-preparing">0</span>
                     </div>
-                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-preparing">
-                        <!-- Cards injected via JS -->
-                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-preparing"></div>
                 </div>
 
-                <!-- Kolom: Lepas Kursi (Tamu Sudah Pulang) -->
-                <div class="w-80 flex flex-col h-full bg-gray-50 rounded-xl border border-red-100 shadow-sm">
-                    <div class="p-4 border-b border-red-100 bg-red-50 rounded-t-xl flex justify-between items-center">
+                <!-- Kolom: Tamu Sudah Pulang -->
+                <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl shadow-sm" style="border:1px solid #fecaca;">
+                    <div class="p-4 rounded-t-xl flex justify-between items-center" style="border-bottom:1px solid #fecaca;background:#fef2f2;">
                         <div>
-                            <h3 class="font-bold text-red-700 text-sm uppercase tracking-wide">Tamu Sudah Pulang</h3>
-                            <p class="text-xs text-red-400 mt-0.5">Lepas kursi agar bisa dipakai reservasi baru</p>
+                            <h3 class="font-bold text-sm uppercase tracking-wide text-red-700">Tamu Sudah Pulang</h3>
+                            <p class="text-xs mt-0.5" style="color:#f87171;">Lepas kursi agar bisa dipakai reservasi baru</p>
                         </div>
-                        <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-served">0</span>
+                        <span class="text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center bg-red-100 text-red-600" id="count-served">0</span>
                     </div>
-                    <div class="kanban-col flex-1 overflow-y-auto m-2 bg-transparent border-0" id="col-served">
-                        <!-- Cards injected via JS -->
-                    </div>
+                    <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-served"></div>
                 </div>
 
             </div>
@@ -270,19 +322,53 @@
             return v || '-';
         }
 
-        function toggleSidebar() {
+        function applySidebarState(isOpen) {
             const sidebar = document.getElementById('admin-sidebar');
             const btn = document.getElementById('toggle-sidebar-btn');
+            const label = document.getElementById('toggle-sidebar-label');
+            const iconOpen = document.getElementById('toggle-sidebar-icon-open');
+            const iconHide = document.getElementById('toggle-sidebar-icon-hide');
+            const backdrop = document.getElementById('sidebar-backdrop');
             if (!sidebar || !btn) return;
 
-            const isHidden = sidebar.style.display === 'none';
-            if (isHidden) {
-                sidebar.style.display = 'flex';
-                btn.textContent = 'Hide Sidebar';
+            if (window.innerWidth < 768) {
+                if (isOpen) {
+                    sidebar.classList.add('sidebar-open');
+                    if (backdrop) backdrop.classList.add('show');
+                } else {
+                    sidebar.classList.remove('sidebar-open');
+                    if (backdrop) backdrop.classList.remove('show');
+                }
             } else {
-                sidebar.style.display = 'none';
-                btn.textContent = 'Open Sidebar';
+                sidebar.style.display = isOpen ? 'flex' : 'none';
             }
+
+            if (isOpen) {
+                if (label) label.textContent = 'Hide Sidebar';
+                if (iconOpen) iconOpen.classList.add('hidden');
+                if (iconHide) iconHide.classList.remove('hidden');
+                btn.setAttribute('title', 'Hide Sidebar');
+            } else {
+                if (label) label.textContent = 'Open Sidebar';
+                if (iconHide) iconHide.classList.add('hidden');
+                if (iconOpen) iconOpen.classList.remove('hidden');
+                btn.setAttribute('title', 'Open Sidebar');
+            }
+        }
+
+        function toggleSidebar(forceState) {
+            const sidebar = document.getElementById('admin-sidebar');
+            if (!sidebar) return;
+            const isOpen = window.innerWidth < 768
+                ? sidebar.classList.contains('sidebar-open')
+                : sidebar.style.display !== 'none';
+            const nextState = typeof forceState === 'boolean' ? forceState : !isOpen;
+            applySidebarState(nextState);
+        }
+
+        function initSidebarState() {
+            // default: close on mobile, open on desktop
+            applySidebarState(window.innerWidth >= 768);
         }
 
         function renderCards(orders) {
@@ -680,10 +766,28 @@
         }
 
         $(document).ready(function() {
+            initSidebarState();
+            window.addEventListener('resize', function() {
+                initSidebarState();
+            });
             fetchFloorPlanTables(function() {
                 fetchOrders();
                 fetchReservedTables();
             });
+            // Improve UX: mouse wheel scroll moves kanban horizontally.
+            const kanbanWrap = document.getElementById('kanban-scroll-wrap');
+            if (kanbanWrap) {
+                kanbanWrap.addEventListener('wheel', function(e) {
+                    // Jika scroll terjadi di dalam kolom kartu, biarkan scroll vertikal berjalan normal
+                    if (e.target.closest('.kanban-col')) return;
+                    const canScrollX = kanbanWrap.scrollWidth > kanbanWrap.clientWidth;
+                    if (!canScrollX) return;
+                    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                        e.preventDefault();
+                        kanbanWrap.scrollLeft += e.deltaY;
+                    }
+                }, { passive: false });
+            }
             setInterval(fetchOrders, 5000);
             setInterval(function() {
                 fetchFloorPlanTables(fetchReservedTables);

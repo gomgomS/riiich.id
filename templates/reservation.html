@@ -70,6 +70,45 @@
         z-index: 20;
         white-space: nowrap;
     }
+    /* Zoom controls */
+    #map-zoom-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 10;
+    }
+    .map-zoom-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        background: rgba(255,255,255,0.95);
+        color: #033187;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 4px rgba(0,0,0,.1);
+        transition: background .15s, transform .1s;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .map-zoom-btn:hover { background: #eff6ff; }
+    .map-zoom-btn:active { transform: scale(.92); }
+    #map-zoom-level {
+        width: 32px;
+        text-align: center;
+        font-size: 10px;
+        font-weight: 700;
+        color: #6b7280;
+        letter-spacing: -.01em;
+        padding: 2px 0;
+        pointer-events: none;
+    }
 
     svg {
         cursor: grab;
@@ -356,12 +395,22 @@
                         <p class="text-xs mt-1 opacity-70">Admin belum mengatur peta tempat duduk.</p>
                     </div>
                     <svg id="visual-map" xmlns="http://www.w3.org/2000/svg"
-                        style="display:block; cursor:grab; user-select:none; flex-shrink:0;">
-                        <g id="map-lines"></g>
-                        <g id="map-assets"></g>
-                        <g id="map-texts"></g>
-                        <g id="map-tables"></g>
+                        style="position:absolute; top:0; left:0; display:block; cursor:grab; user-select:none; transform-origin:0 0;">
+                        <g id="map-objects"></g>
                     </svg>
+                    <!-- Zoom controls -->
+                    <div id="map-zoom-controls">
+                        <button class="map-zoom-btn" id="btn-zoom-in" title="Zoom In">
+                            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                        <div id="map-zoom-level">100%</div>
+                        <button class="map-zoom-btn" id="btn-zoom-out" title="Zoom Out">
+                            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4"/></svg>
+                        </button>
+                        <button class="map-zoom-btn" id="btn-zoom-fit" title="Fit to Screen" style="font-size:11px;font-weight:800;letter-spacing:-.02em;">
+                            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                        </button>
+                    </div>
                     </div>
                 </div>
 
@@ -701,18 +750,12 @@
     const MAP_PADDING = 56;
 
     function renderMap() {
-        const linesLayer = document.getElementById('map-lines');
-        const assetsLayer = document.getElementById('map-assets');
-        const textsLayer = document.getElementById('map-texts');
-        const tablesLayer = document.getElementById('map-tables');
+        const objectsLayer = document.getElementById('map-objects');
         const svgEl = document.getElementById('visual-map');
         const emptyState = document.getElementById('map-empty-state');
-        if (!linesLayer || !tablesLayer || !svgEl || !assetsLayer || !textsLayer) return;
+        if (!objectsLayer || !svgEl) return;
 
-        linesLayer.innerHTML = '';
-        assetsLayer.innerHTML = '';
-        textsLayer.innerHTML = '';
-        tablesLayer.innerHTML = '';
+        objectsLayer.innerHTML = '';
 
         const hasLines = floorPlanData.lines && floorPlanData.lines.length > 0;
         const hasTables = floorPlanData.tables && floorPlanData.tables.length > 0;
@@ -735,22 +778,28 @@
             if (y > maxY) maxY = y;
         }
 
-        if (hasLines) {
-            floorPlanData.lines.forEach(line => {
+        const allItems = [];
+        (floorPlanData.lines || []).forEach(line => allItems.push({ type: 'line', data: line }));
+        (floorPlanData.assets || []).forEach(asset => allItems.push({ type: 'asset', data: asset }));
+        (floorPlanData.texts || []).forEach(textNode => allItems.push({ type: 'text', data: textNode }));
+        (floorPlanData.tables || []).forEach(table => allItems.push({ type: 'table', data: table }));
+
+        allItems.sort((a, b) => (Number(a.data.z) || 0) - (Number(b.data.z) || 0));
+
+        allItems.forEach(item => {
+            if (item.type === 'line') {
+                const line = item.data;
                 const node = document.createElementNS(svgns, 'line');
                 node.setAttribute('x1', line.x1); node.setAttribute('y1', line.y1);
                 node.setAttribute('x2', line.x2); node.setAttribute('y2', line.y2);
                 node.setAttribute('stroke', line.stroke || '#333');
                 node.setAttribute('stroke-width', line.width || 2);
                 if (line.dash) node.setAttribute('stroke-dasharray', line.dash);
-                linesLayer.appendChild(node);
+                objectsLayer.appendChild(node);
                 expandBounds(line.x1, line.y1);
                 expandBounds(line.x2, line.y2);
-            });
-        }
-
-        if (floorPlanData.assets && floorPlanData.assets.length > 0) {
-            floorPlanData.assets.forEach(asset => {
+            } else if (item.type === 'asset') {
+                const asset = item.data;
                 const img = document.createElementNS(svgns, 'image');
                 const w = asset.width || 48;
                 const h = asset.height || 48;
@@ -762,14 +811,11 @@
                 img.setAttribute('height', h);
                 img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', asset.src || '');
                 img.style.pointerEvents = 'none'; // customer can only see
-                assetsLayer.appendChild(img);
+                objectsLayer.appendChild(img);
                 expandBounds(x - (w / 2), y - (h / 2));
                 expandBounds(x + (w / 2), y + (h / 2));
-            });
-        }
-
-        if (floorPlanData.texts && floorPlanData.texts.length > 0) {
-            floorPlanData.texts.forEach(textNode => {
+            } else if (item.type === 'text') {
+                const textNode = item.data;
                 const tx = document.createElementNS(svgns, 'text');
                 tx.setAttribute('x', textNode.x || 0);
                 tx.setAttribute('y', textNode.y || 0);
@@ -778,17 +824,14 @@
                 tx.setAttribute('fill', textNode.color || '#111827');
                 tx.textContent = textNode.text || '';
                 tx.style.pointerEvents = 'none'; // customer can only see
-                textsLayer.appendChild(tx);
+                objectsLayer.appendChild(tx);
 
                 const size = textNode.size || 16;
                 const textLen = (textNode.text || '').length;
                 expandBounds((textNode.x || 0) - Math.max(12, textLen * (size * 0.35)), (textNode.y || 0) - size);
                 expandBounds((textNode.x || 0) + Math.max(12, textLen * (size * 0.35)), (textNode.y || 0) + size);
-            });
-        }
-
-        if (hasTables) {
-            floorPlanData.tables.forEach(table => {
+            } else if (item.type === 'table') {
+                const table = item.data;
                 if (!table.shape) table.shape = 'round';
                 if (!table.width) table.width = (table.r || 25) * 2;
                 if (!table.height) table.height = (table.r || 25) * 2;
@@ -838,7 +881,7 @@
                 text.textContent = displayName;
 
                 // Capacity badge below label: person icon + count
-                const capacity = table.capacity || 4;
+                const capacity = table.seats || table.capacity || 4;
                 const capText = document.createElementNS(svgns, 'text');
                 capText.setAttribute('text-anchor', 'middle');
                 capText.setAttribute('dominant-baseline', 'central');
@@ -874,7 +917,7 @@
                     updateSelectionSummary();
                 });
 
-                tablesLayer.appendChild(g);
+                objectsLayer.appendChild(g);
                 const r = table.r || 30;
                 let halfW = r;
                 let halfH = r;
@@ -889,8 +932,8 @@
                 // Include label/sub-label visual area so top-most tables are not clipped.
                 expandBounds(table.cx - halfW - 6, table.cy - halfH - 22);
                 expandBounds(table.cx + halfW + 6, table.cy + halfH + 18);
-            });
-        }
+            }
+        });
 
         // Compute tight viewBox from actual content + padding
         const vbX = minX - MAP_PADDING;
@@ -925,15 +968,76 @@
         const container = document.getElementById('client-map');
         const svgEl = document.getElementById('visual-map');
         const toast = document.getElementById('drag-toast');
+        const zoomLabel = document.getElementById('map-zoom-level');
+
         let isPanning = false, startX = 0, startY = 0;
         let panX = 0, panY = 0;
-        const PAN_EDGE_BUFFER = 80; // allow reaching very top/bottom edges comfortably
+        let zoom = 1;
+        const MIN_ZOOM = 0.2, MAX_ZOOM = 5, ZOOM_STEP = 0.15;
+        const BUFFER = 60;
 
-        // Only show toast if content is larger than container
+        function updateZoomLabel() {
+            if (zoomLabel) zoomLabel.textContent = Math.round(zoom * 100) + '%';
+        }
+
+        function clampPan(x, y) {
+            const cW = container.clientWidth;
+            const cH = container.clientHeight;
+            const scaledW = contentW * zoom;
+            const scaledH = contentH * zoom;
+            // If scaled content smaller than container → lock to center (no free panning)
+            const rx = scaledW <= cW
+                ? (cW - scaledW) / 2
+                : Math.min(BUFFER, Math.max(-(scaledW - cW + BUFFER), x));
+            const ry = scaledH <= cH
+                ? (cH - scaledH) / 2
+                : Math.min(BUFFER, Math.max(-(scaledH - cH + BUFFER), y));
+            return { x: rx, y: ry };
+        }
+
+        function applyTransform() {
+            svgEl.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+            updateZoomLabel();
+        }
+
+        function fitToContainer() {
+            const cW = container.clientWidth;
+            const cH = container.clientHeight;
+            if (!cW || !cH || !contentW || !contentH) return;
+            // Fit whole map, never exceed 1x zoom on initial view
+            zoom = Math.min(1, cW / contentW, cH / contentH);
+            // Center the scaled content inside the container
+            panX = (cW - contentW * zoom) / 2;
+            panY = (cH - contentH * zoom) / 2;
+            applyTransform();
+        }
+
+        function zoomAt(clientX, clientY, newZoom) {
+            const rect = container.getBoundingClientRect();
+            const mx = clientX - rect.left;
+            const my = clientY - rect.top;
+            // SVG-space point under the mouse before zoom
+            const svgX = (mx - panX) / zoom;
+            const svgY = (my - panY) / zoom;
+            zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
+            // Reposition so the same SVG point stays under the mouse
+            panX = mx - svgX * zoom;
+            panY = my - svgY * zoom;
+            const c = clampPan(panX, panY);
+            panX = c.x; panY = c.y;
+            applyTransform();
+        }
+
+        function zoomCenter(newZoom) {
+            const rect = container.getBoundingClientRect();
+            zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, newZoom);
+        }
+
+        // Toast on first load if content > container
         function showToastIfNeeded() {
             const cW = container.clientWidth;
             const cH = container.clientHeight;
-            if (contentW > cW || contentH > cH) {
+            if (contentW * zoom > cW || contentH * zoom > cH) {
                 toast.style.display = 'flex';
                 toast.style.opacity = '1';
                 setTimeout(() => {
@@ -943,29 +1047,9 @@
             }
         }
 
-        function clampPan(x, y) {
-            const cW = container.clientWidth;
-            const cH = container.clientHeight;
-            const maxPanX = Math.max(0, contentW - cW);
-            const maxPanY = Math.max(0, contentH - cH);
-            const minX = -(maxPanX + PAN_EDGE_BUFFER);
-            const maxX = PAN_EDGE_BUFFER;
-            const minY = -(maxPanY + PAN_EDGE_BUFFER);
-            const maxY = PAN_EDGE_BUFFER;
-            return {
-                x: Math.min(maxX, Math.max(minX, x)),
-                y: Math.min(maxY, Math.max(minY, y))
-            };
-        }
-
-        function applyPan() {
-            svgEl.style.transform = `translate(${panX}px, ${panY}px)`;
-        }
-
-        // Remove old listeners before adding new ones (prevent stacking on re-render)
-        const oldClone = container.cloneNode(false);
-        // We use a named handler approach instead
+        // --- Mouse pan ---
         container._onMouseDown = (e) => {
+            if (e.button !== 0) return;
             isPanning = true;
             startX = e.clientX - panX;
             startY = e.clientY - panY;
@@ -977,34 +1061,73 @@
 
         window.addEventListener('mousemove', e => {
             if (!isPanning) return;
-            const raw = { x: e.clientX - startX, y: e.clientY - startY };
-            const clamped = clampPan(raw.x, raw.y);
-            panX = clamped.x; panY = clamped.y;
-            applyPan();
+            const c = clampPan(e.clientX - startX, e.clientY - startY);
+            panX = c.x; panY = c.y;
+            applyTransform();
         });
         window.addEventListener('mouseup', () => {
             isPanning = false;
             svgEl.style.cursor = 'grab';
         });
 
-        // Touch support
-        container.addEventListener('touchstart', e => {
-            const t = e.touches[0];
-            isPanning = true;
-            startX = t.clientX - panX;
-            startY = t.clientY - panY;
-        }, { passive: true });
-        container.addEventListener('touchmove', e => {
-            if (!isPanning) return;
-            const t = e.touches[0];
-            const raw = { x: t.clientX - startX, y: t.clientY - startY };
-            const clamped = clampPan(raw.x, raw.y);
-            panX = clamped.x; panY = clamped.y;
-            applyPan();
-        }, { passive: true });
-        container.addEventListener('touchend', () => { isPanning = false; });
+        // --- Mouse wheel zoom ---
+        container.addEventListener('wheel', e => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+            zoomAt(e.clientX, e.clientY, zoom + delta);
+        }, { passive: false });
 
-        // Show toast a short moment after the map becomes visible
+        // --- Touch: single-finger pan, two-finger pinch zoom ---
+        let lastPinchDist = 0, pinchStartZoom = 1;
+
+        container.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                isPanning = false;
+                lastPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                pinchStartZoom = zoom;
+            } else if (e.touches.length === 1) {
+                isPanning = true;
+                startX = e.touches[0].clientX - panX;
+                startY = e.touches[0].clientY - panY;
+            }
+        }, { passive: true });
+
+        container.addEventListener('touchmove', e => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinchStartZoom * (dist / lastPinchDist)));
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                zoomAt(cx, cy, newZoom);
+            } else if (isPanning && e.touches.length === 1) {
+                const t = e.touches[0];
+                const c = clampPan(t.clientX - startX, t.clientY - startY);
+                panX = c.x; panY = c.y;
+                applyTransform();
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchend', e => {
+            if (e.touches.length < 2) { isPanning = false; }
+        });
+
+        // --- Zoom buttons ---
+        const btnIn  = document.getElementById('btn-zoom-in');
+        const btnOut = document.getElementById('btn-zoom-out');
+        const btnFit = document.getElementById('btn-zoom-fit');
+        if (btnIn)  btnIn.onclick  = () => zoomCenter(zoom + ZOOM_STEP);
+        if (btnOut) btnOut.onclick = () => zoomCenter(zoom - ZOOM_STEP);
+        if (btnFit) btnFit.onclick = fitToContainer;
+
+        // Initial fit + toast
+        fitToContainer();
         setTimeout(showToastIfNeeded, 400);
     }
 
@@ -1124,7 +1247,7 @@
             reservationData.table_ids = [];
             reservationData.table_labels = [];
             reservationData.table_capacity = 0;
-            $('#map-tables .table-node').removeClass('table-selected');
+            $('#map-objects .table-node').removeClass('table-selected');
         } else {
             $('#free-seat-preference-wrap').addClass('hidden');
             $('#client-map-wrap').show();
