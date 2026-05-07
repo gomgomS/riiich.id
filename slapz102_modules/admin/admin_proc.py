@@ -476,3 +476,167 @@ def set_table_status(table_id, new_status):
     except Exception:
         print(traceback.format_exc())
         return {"ok": False, "msg": "Database error"}
+
+# ─── Menu Management ──────────────────────────────────────────────────────────
+
+def get_menus():
+    """Return all active menu items sorted by category then name."""
+    try:
+        db = _get_db()
+        menus = list(db["db_menu"].find({"is_deleted": {"$ne": True}}).sort("created_at", 1))
+        for m in menus:
+            m["_id"] = str(m["_id"])
+        return {"ok": True, "data": menus}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "data": [], "msg": "Database error"}
+
+def get_available_menus():
+    """Return available menu items for customer reservation page."""
+    try:
+        db = _get_db()
+        menus = list(
+            db["db_menu"].find({
+                "is_deleted": {"$ne": True},
+                "is_available": {"$ne": False}
+            }).sort([("category", 1), ("name", 1)])
+        )
+        for m in menus:
+            m["_id"] = str(m["_id"])
+        return {"ok": True, "data": menus}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "data": [], "msg": "Database error"}
+
+def save_menu(menu_id, name, category, price, description, image_url, is_available):
+    """Insert or update a menu item."""
+    try:
+        import uuid
+        db = _get_db()
+        now = int(time.time() * 1000)
+
+        if menu_id:
+            # Update existing
+            db["db_menu"].update_one(
+                {"menu_id": menu_id},
+                {"$set": {
+                    "name": name,
+                    "category": category,
+                    "price": int(price),
+                    "description": description,
+                    "image_url": image_url,
+                    "is_available": bool(is_available),
+                    "updated_at": now
+                }}
+            )
+        else:
+            new_id = "MENU-" + str(uuid.uuid4())[:8].upper()
+            db["db_menu"].insert_one({
+                "menu_id": new_id,
+                "name": name,
+                "category": category,
+                "price": int(price),
+                "description": description,
+                "image_url": image_url,
+                "is_available": bool(is_available),
+                "is_deleted": False,
+                "created_at": now,
+                "updated_at": now
+            })
+            menu_id = new_id
+
+        return {"ok": True, "menu_id": menu_id}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "msg": "Database error"}
+
+def delete_menu(menu_id):
+    """Soft-delete a menu item."""
+    try:
+        db = _get_db()
+        db["db_menu"].update_one(
+            {"menu_id": menu_id},
+            {"$set": {"is_deleted": True, "updated_at": int(time.time() * 1000)}}
+        )
+        return {"ok": True}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "msg": "Database error"}
+
+def get_menu_types():
+    """Return menu types/categories that admin configured."""
+    try:
+        db = _get_db()
+        rows = list(
+            db["db_menu_type"]
+            .find({"is_deleted": {"$ne": True}})
+            .sort("name", 1)
+        )
+        for row in rows:
+            row["_id"] = str(row["_id"])
+        return {"ok": True, "data": rows}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "data": [], "msg": "Database error"}
+
+def save_menu_type(type_id, name):
+    """Insert or update menu type."""
+    try:
+        import uuid
+        db = _get_db()
+        now = int(time.time() * 1000)
+        clean_name = str(name or "").strip()
+        if not clean_name:
+            return {"ok": False, "msg": "Type name is required"}
+
+        existing = db["db_menu_type"].find_one({
+            "name": {"$regex": f"^{clean_name}$", "$options": "i"},
+            "is_deleted": {"$ne": True}
+        })
+        if existing and (not type_id or existing.get("type_id") != type_id):
+            return {"ok": False, "msg": "Type already exists"}
+
+        if type_id:
+            db["db_menu_type"].update_one(
+                {"type_id": type_id},
+                {"$set": {"name": clean_name, "updated_at": now, "is_deleted": False}}
+            )
+            return {"ok": True, "type_id": type_id}
+
+        new_id = "TYPE-" + str(uuid.uuid4())[:8].upper()
+        db["db_menu_type"].insert_one({
+            "type_id": new_id,
+            "name": clean_name,
+            "is_deleted": False,
+            "created_at": now,
+            "updated_at": now
+        })
+        return {"ok": True, "type_id": new_id}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "msg": "Database error"}
+
+def delete_menu_type(type_id):
+    """Soft delete menu type if not used by active menus."""
+    try:
+        db = _get_db()
+        type_row = db["db_menu_type"].find_one({"type_id": type_id, "is_deleted": {"$ne": True}})
+        if not type_row:
+            return {"ok": False, "msg": "Type not found"}
+
+        type_name = type_row.get("name", "")
+        used_count = db["db_menu"].count_documents({
+            "is_deleted": {"$ne": True},
+            "category": type_name
+        })
+        if used_count > 0:
+            return {"ok": False, "msg": "Type is used by menu items"}
+
+        db["db_menu_type"].update_one(
+            {"type_id": type_id},
+            {"$set": {"is_deleted": True, "updated_at": int(time.time() * 1000)}}
+        )
+        return {"ok": True}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "msg": "Database error"}

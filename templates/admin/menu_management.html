@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Management - Renrich Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='v2/admin.output.css') }}">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f3f4f6; }
+        #sidebar-backdrop { display:none; }
+        @media (max-width: 767px) {
+            #admin-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 40; transform: translateX(-100%); transition: transform .2s ease; }
+            #admin-sidebar.sidebar-open { transform: translateX(0); }
+            #sidebar-backdrop { position: fixed; inset: 0; z-index: 30; background: rgba(17,24,39,.45); }
+            #sidebar-backdrop.show { display:block; }
+        }
+        @media (min-width: 768px) {
+            #admin-sidebar { position: relative; transform: none !important; }
+            #sidebar-backdrop { display:none !important; }
+        }
+        .menu-thumb { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid #e5e7eb; background: #f9fafb; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-gray-100">
+    <aside id="admin-sidebar" class="w-64 bg-white shadow-xl flex flex-col h-full z-20">
+        <div class="h-16 flex items-center justify-center border-b border-gray-100">
+            <span class="text-2xl font-bold text-[#033187] tracking-wider font-playfair">RENRICH</span>
+        </div>
+        <div class="p-4 flex-1">
+            <ul class="space-y-2">
+                <li><a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">Dashboard</a></li>
+                <li><a href="/admin/operations" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">Live Operations</a></li>
+                <li><a href="/admin/operations/history" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">Order History</a></li>
+                <li><a href="/admin/floor_designer" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-[#033187] rounded-lg font-medium transition">Floor Designer</a></li>
+                <li><a href="/admin/menu" class="flex items-center gap-3 px-4 py-3 bg-[#033187] text-white rounded-lg font-medium shadow-md">Menu Management</a></li>
+            </ul>
+        </div>
+        <div class="p-4 border-t border-gray-100">
+            <a href="/admin/logout" class="flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg font-medium transition">Logout</a>
+        </div>
+    </aside>
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
+
+    <main class="flex-1 flex flex-col h-full">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-3">
+                <button id="toggle-sidebar-btn" onclick="toggleSidebar()"
+                    class="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" title="Open Sidebar">
+                    <svg id="toggle-sidebar-icon-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    <svg id="toggle-sidebar-icon-hide" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <span id="toggle-sidebar-label" class="hidden md:block ml-2">Open Sidebar</span>
+                </button>
+                <h1 class="text-xl font-bold text-gray-800">Menu Management</h1>
+            </div>
+            <div class="text-sm font-medium text-gray-600">{{ admin_name }}</div>
+        </header>
+
+        <div class="p-6 overflow-y-auto">
+            <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-gray-500 mr-2">Quick Jump:</span>
+                <a href="#type-section" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">Input Type</a>
+                <a href="#menu-form-section" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">Input Menu</a>
+                <a href="#menu-list-section" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">Daftar Menu</a>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 space-y-6">
+                    <div id="type-section" class="bg-white rounded-xl border border-gray-200 p-5">
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">Input Type</h2>
+                        <form method="POST" action="/admin/menu/type/save" class="mb-4">
+                            <input type="hidden" name="type_id" value="{{ edit_type.type_id if edit_type else '' }}">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Type</label>
+                            <input name="type_name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" value="{{ edit_type.name if edit_type else '' }}" placeholder="Contoh: Coffee / Non-Coffee / Food" required>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="submit" class="bg-[#033187] text-white rounded-lg py-2 text-sm font-semibold hover:bg-[#02308E]">Simpan Type</button>
+                                <a href="/admin/menu" class="bg-white text-center text-gray-700 border border-gray-300 rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Reset</a>
+                            </div>
+                        </form>
+
+                        <div class="space-y-2">
+                            {% if menu_types and menu_types|length > 0 %}
+                                {% for t in menu_types %}
+                                <div class="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2">
+                                    <div class="text-sm font-medium text-gray-700">{{ t.name }}</div>
+                                    <div class="flex items-center gap-1">
+                                        <a href="/admin/menu?edit_type_id={{ t.type_id }}" class="px-2 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50">Edit</a>
+                                        <form method="POST" action="/admin/menu/type/delete" onsubmit="return confirm('Hapus type ini?')" class="inline">
+                                            <input type="hidden" name="type_id" value="{{ t.type_id }}">
+                                            <button type="submit" class="px-2 py-1 text-xs border border-red-200 bg-red-50 text-red-600 rounded-md hover:bg-red-100">Hapus</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-xs text-gray-400">Belum ada type. Tambahkan type baru.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div id="menu-form-section" class="bg-white rounded-xl border border-gray-200 p-5">
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">Input Menu</h2>
+                        <form method="POST" action="/admin/menu/save" enctype="multipart/form-data">
+                            <input type="hidden" name="menu_id" value="{{ edit_menu.menu_id if edit_menu else '' }}">
+                            <input type="hidden" name="image_url" value="{{ edit_menu.image_url if edit_menu else '' }}">
+
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Menu</label>
+                            <input name="name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" value="{{ edit_menu.name if edit_menu else '' }}" placeholder="Contoh: Caramel Latte" required>
+
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Type Menu</label>
+                            <input name="category" list="menu-category-list" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-1" value="{{ edit_menu.category if edit_menu else '' }}" placeholder="Pilih type dari dropdown" required>
+                            <datalist id="menu-category-list">
+                                {% for t in menu_types %}
+                                <option value="{{ t.name }}"></option>
+                                {% endfor %}
+                            </datalist>
+                            <p class="text-[11px] text-gray-500 mb-3">Dropdown ini mengambil type dari card Input Type.</p>
+
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Harga</label>
+                            <input name="price" type="number" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" value="{{ edit_menu.price if edit_menu else '' }}" placeholder="35000" required>
+
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Deskripsi</label>
+                            <textarea name="description" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" rows="3" placeholder="Deskripsi singkat menu">{{ edit_menu.description if edit_menu else '' }}</textarea>
+
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">Upload Gambar Menu</label>
+                            <input name="image" type="file" accept="image/*" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2">
+                            {% if edit_menu and edit_menu.image_url %}
+                            <img src="{{ edit_menu.image_url }}" alt="{{ edit_menu.name }}" class="w-full h-40 object-cover rounded-lg border border-gray-200 mb-3">
+                            {% endif %}
+
+                            <label class="inline-flex items-center gap-2 mb-4">
+                                <input name="is_available" type="checkbox" {% if not edit_menu or edit_menu.is_available %}checked{% endif %}>
+                                <span class="text-sm text-gray-700">Tersedia untuk pelanggan</span>
+                            </label>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="submit" class="bg-[#033187] text-white rounded-lg py-2 text-sm font-semibold hover:bg-[#02308E]">Simpan Menu</button>
+                                <a href="/admin/menu" class="bg-white text-center text-gray-700 border border-gray-300 rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Reset</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="menu-list-section" class="lg:col-span-2">
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <h2 class="text-lg font-bold text-gray-800">Daftar Menu</h2>
+                            <span class="text-xs font-bold bg-blue-50 text-[#033187] px-2 py-1 rounded-full">{{ menus|length }} item</span>
+                        </div>
+                        {% if menus and menus|length > 0 %}
+                            <div class="divide-y divide-gray-100">
+                                {% for m in menus %}
+                                <div class="p-4 flex items-center gap-4">
+                                    {% if m.image_url %}
+                                    <img class="menu-thumb" src="{{ m.image_url }}" alt="{{ m.name }}">
+                                    {% else %}
+                                    <div class="menu-thumb flex items-center justify-center text-xs text-gray-400">No Image</div>
+                                    {% endif %}
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h3 class="font-semibold text-gray-800 truncate">{{ m.name }}</h3>
+                                            {% if m.is_available %}
+                                            <span class="text-xs font-bold px-2 py-1 rounded-full bg-green-50 text-green-700">Available</span>
+                                            {% else %}
+                                            <span class="text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-600">Hidden</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-xs text-gray-500 mb-1">{{ m.category or 'Uncategorized' }} • Rp {{ "{:,}".format((m.price or 0)|int).replace(",", ".") }}</div>
+                                        <div class="text-xs text-gray-400 truncate">{{ m.description or '' }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <a href="/admin/menu?edit_menu_id={{ m.menu_id }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white hover:bg-gray-50">Edit</a>
+                                        <form method="POST" action="/admin/menu/delete" onsubmit="return confirm('Hapus menu ini?')" class="inline">
+                                            <input type="hidden" name="menu_id" value="{{ m.menu_id }}">
+                                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="p-6 text-center text-sm text-gray-500">Belum ada menu. Tambahkan dari form di kiri.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function applySidebarState(isOpen) {
+            const sidebar = document.getElementById('admin-sidebar');
+            const label = document.getElementById('toggle-sidebar-label');
+            const iconOpen = document.getElementById('toggle-sidebar-icon-open');
+            const iconHide = document.getElementById('toggle-sidebar-icon-hide');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const btn = document.getElementById('toggle-sidebar-btn');
+            if (!sidebar) return;
+            if (window.innerWidth < 768) {
+                if (isOpen) { sidebar.classList.add('sidebar-open'); if (backdrop) backdrop.classList.add('show'); }
+                else { sidebar.classList.remove('sidebar-open'); if (backdrop) backdrop.classList.remove('show'); }
+            } else {
+                sidebar.style.display = isOpen ? 'flex' : 'none';
+            }
+            if (label) label.textContent = isOpen ? 'Hide Sidebar' : 'Open Sidebar';
+            if (iconOpen && iconHide) {
+                if (isOpen) { iconOpen.classList.add('hidden'); iconHide.classList.remove('hidden'); }
+                else { iconHide.classList.add('hidden'); iconOpen.classList.remove('hidden'); }
+            }
+            if (btn) btn.setAttribute('title', isOpen ? 'Hide Sidebar' : 'Open Sidebar');
+        }
+
+        function toggleSidebar(forceState) {
+            const sidebar = document.getElementById('admin-sidebar');
+            if (!sidebar) return;
+            const isOpen = window.innerWidth < 768 ? sidebar.classList.contains('sidebar-open') : sidebar.style.display !== 'none';
+            const next = typeof forceState === 'boolean' ? forceState : !isOpen;
+            applySidebarState(next);
+        }
+
+        function initSidebarState() {
+            applySidebarState(window.innerWidth >= 768);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initSidebarState();
+            window.addEventListener('resize', initSidebarState);
+        });
+    </script>
+</body>
+</html>

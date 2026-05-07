@@ -262,3 +262,117 @@ def api_set_table_status():
     except Exception:
         print(traceback.format_exc())
         return jsonify({"ok": False, "msg": "Server error"}), 500
+
+# ─── Menu Management ──────────────────────────────────────────────────────────
+
+@admin_blueprint.route("/admin/menu", methods=["GET"])
+def menu_management():
+    try:
+        if not _is_logged_in():
+            return redirect(url_for("admin_blueprint.login_page"))
+        admin_name = session.get("admin_name", "Admin")
+        menus_result = admin_proc.get_menus()
+        types_result = admin_proc.get_menu_types()
+        menus = menus_result.get("data", []) if menus_result.get("ok") else []
+        menu_types = types_result.get("data", []) if types_result.get("ok") else []
+        edit_menu_id = request.args.get("edit_menu_id", "").strip()
+        edit_type_id = request.args.get("edit_type_id", "").strip()
+        edit_menu = next((m for m in menus if m.get("menu_id") == edit_menu_id), None)
+        edit_type = next((t for t in menu_types if t.get("type_id") == edit_type_id), None)
+        from flask import render_template
+        return render_template(
+            "admin/menu_management.html",
+            admin_name=admin_name,
+            menus=menus,
+            menu_types=menu_types,
+            edit_menu=edit_menu,
+            edit_type=edit_type
+        )
+    except Exception:
+        print(traceback.format_exc())
+        return "An error occurred", 500
+
+@admin_blueprint.route("/admin/menu/type/save", methods=["POST"])
+def form_save_menu_type():
+    try:
+        if not _is_logged_in():
+            return redirect(url_for("admin_blueprint.login_page"))
+        type_id = request.form.get("type_id", "").strip()
+        name = request.form.get("type_name", "").strip()
+        result = admin_proc.save_menu_type(type_id=type_id, name=name)
+        if not result.get("ok"):
+            return redirect(url_for("admin_blueprint.menu_management", edit_type_id=type_id))
+        return redirect(url_for("admin_blueprint.menu_management"))
+    except Exception:
+        print(traceback.format_exc())
+        return redirect(url_for("admin_blueprint.menu_management"))
+
+@admin_blueprint.route("/admin/menu/type/delete", methods=["POST"])
+def form_delete_menu_type():
+    try:
+        if not _is_logged_in():
+            return redirect(url_for("admin_blueprint.login_page"))
+        type_id = request.form.get("type_id", "").strip()
+        admin_proc.delete_menu_type(type_id)
+        return redirect(url_for("admin_blueprint.menu_management"))
+    except Exception:
+        print(traceback.format_exc())
+        return redirect(url_for("admin_blueprint.menu_management"))
+
+@admin_blueprint.route("/admin/menu/save", methods=["POST"])
+def form_save_menu():
+    import os, uuid
+    from werkzeug.utils import secure_filename
+    from flask import current_app
+    try:
+        if not _is_logged_in():
+            return redirect(url_for("admin_blueprint.login_page"))
+
+        menu_id = request.form.get("menu_id", "").strip()
+        name = request.form.get("name", "").strip()
+        category = request.form.get("category", "").strip()
+        price = request.form.get("price", "0").strip()
+        description = request.form.get("description", "").strip()
+        image_url = request.form.get("image_url", "").strip()
+        is_available = request.form.get("is_available", "") == "on"
+
+        # Optional image upload from form POST
+        if "image" in request.files and request.files["image"].filename:
+            file = request.files["image"]
+            safe_name = secure_filename(file.filename)
+            root, ext_raw = os.path.splitext(safe_name)
+            ext = ext_raw.replace(".", "").lower()
+            allowed = {"png", "jpg", "jpeg", "webp", "gif"}
+            if root and ext in allowed:
+                unique_name = f"{uuid.uuid4().hex}.{ext}"
+                upload_dir = os.path.join(current_app.root_path, "static", "uploads", "menu")
+                os.makedirs(upload_dir, exist_ok=True)
+                file.save(os.path.join(upload_dir, unique_name))
+                image_url = f"/static/uploads/menu/{unique_name}"
+
+        admin_proc.save_menu(
+            menu_id=menu_id,
+            name=name,
+            category=category,
+            price=price or 0,
+            description=description,
+            image_url=image_url,
+            is_available=is_available
+        )
+        return redirect(url_for("admin_blueprint.menu_management"))
+    except Exception:
+        print(traceback.format_exc())
+        return redirect(url_for("admin_blueprint.menu_management"))
+
+@admin_blueprint.route("/admin/menu/delete", methods=["POST"])
+def form_delete_menu():
+    try:
+        if not _is_logged_in():
+            return redirect(url_for("admin_blueprint.login_page"))
+        menu_id = request.form.get("menu_id", "").strip()
+        admin_proc.delete_menu(menu_id)
+        return redirect(url_for("admin_blueprint.menu_management"))
+    except Exception:
+        print(traceback.format_exc())
+        return redirect(url_for("admin_blueprint.menu_management"))
+

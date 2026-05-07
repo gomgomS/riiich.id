@@ -489,16 +489,29 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="menu-selection-list">
-                    <!-- Menu Item -->
-                    <div class="menu-item-card p-5 flex flex-col justify-between group" data-id="ITEM-001"
-                        data-price="45000" data-name="Renrich Signature Latte">
+                    {% if menus and menus|length > 0 %}
+                    {% for menu in menus %}
+                    <div class="menu-item-card p-5 flex flex-col justify-between group"
+                        data-id="{{ menu.menu_id }}" data-price="{{ menu.price or 0 }}" data-name="{{ menu.name or '' }}">
                         <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span
-                                    class="bg-blue-50 text-[#033187] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Signature</span>
+                            <div class="w-full">
+                                {% if menu.image_url %}
+                                <div class="mb-3 rounded-lg overflow-hidden border border-gray-100">
+                                    <img src="{{ menu.image_url }}" alt="{{ menu.name or 'Menu' }}" class="w-full h-36 object-cover">
+                                </div>
+                                {% endif %}
+                                <span class="bg-blue-50 text-[#033187] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">
+                                    {{ menu.category or 'Menu' }}
+                                </span>
                                 <h4 class="font-bold text-gray-800 text-lg group-hover:text-[#033187] transition">
-                                    Signature Latte</h4>
-                                <p class="text-sm text-gray-500 font-medium mt-1">Rp 45.000</p>
+                                    {{ menu.name or '-' }}
+                                </h4>
+                                {% if menu.description %}
+                                <p class="text-xs text-gray-500 mt-1 leading-relaxed">{{ menu.description }}</p>
+                                {% endif %}
+                                <p class="text-sm text-gray-500 font-medium mt-2">
+                                    Rp {{ "{:,}".format((menu.price or 0)|int).replace(",", ".") }}
+                                </p>
                             </div>
                         </div>
                         <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
@@ -514,58 +527,12 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Menu Item -->
-                    <div class="menu-item-card p-5 flex flex-col justify-between group" data-id="ITEM-002"
-                        data-price="30000" data-name="Premium Espresso">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span
-                                    class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Classic</span>
-                                <h4 class="font-bold text-gray-800 text-lg group-hover:text-[#033187] transition">
-                                    Premium Espresso</h4>
-                                <p class="text-sm text-gray-500 font-medium mt-1">Rp 30.000</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
-                            <span class="text-xs text-gray-400 font-medium">Tambahkan</span>
-                            <div class="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-200">
-                                <button
-                                    class="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-gray-600 hover:text-red-500 hover:shadow shadow-sm transition"
-                                    onclick="updateQty(this, -1)">-</button>
-                                <span class="qty font-bold text-[#033187] w-6 text-center">0</span>
-                                <button
-                                    class="w-8 h-8 rounded-full bg-[#033187] flex items-center justify-center font-bold text-white hover:bg-[#02308E] hover:shadow shadow-sm transition"
-                                    onclick="updateQty(this, 1)">+</button>
-                            </div>
-                        </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="col-span-full bg-white border border-gray-100 rounded-xl p-6 text-center text-sm text-gray-500">
+                        Menu belum tersedia saat ini.
                     </div>
-
-                    <!-- Menu Item -->
-                    <div class="menu-item-card p-5 flex flex-col justify-between group" data-id="ITEM-003"
-                        data-price="42000" data-name="Matcha Fusion">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <span
-                                    class="bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Non-Coffee</span>
-                                <h4 class="font-bold text-gray-800 text-lg group-hover:text-[#033187] transition">Matcha
-                                    Fusion</h4>
-                                <p class="text-sm text-gray-500 font-medium mt-1">Rp 42.000</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between border-t border-gray-100 pt-4 mt-auto">
-                            <span class="text-xs text-gray-400 font-medium">Tambahkan</span>
-                            <div class="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-200">
-                                <button
-                                    class="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-gray-600 hover:text-red-500 hover:shadow shadow-sm transition"
-                                    onclick="updateQty(this, -1)">-</button>
-                                <span class="qty font-bold text-[#033187] w-6 text-center">0</span>
-                                <button
-                                    class="w-8 h-8 rounded-full bg-[#033187] flex items-center justify-center font-bold text-white hover:bg-[#02308E] hover:shadow shadow-sm transition"
-                                    onclick="updateQty(this, 1)">+</button>
-                            </div>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="mt-8 p-6 bg-blue-50/50 rounded-2xl border border-blue-100 max-w-lg mx-auto shadow-sm">
