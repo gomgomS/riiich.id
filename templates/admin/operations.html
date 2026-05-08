@@ -293,7 +293,7 @@
             if (diffMs >= 0) {
                 return `${timeText} lagi`;
             }
-            return `Terlambat ${timeText}`;
+            return 'customer sampai';
         }
 
         function getTableDisplayLabel(tableId) {
@@ -475,7 +475,7 @@
                 const payColor = order.payment_status === 'Paid' ? '#16a34a' : '#dc2626';
                 const arrivalLabel = formatArrivalLabel(order.arrival_time || '');
                 const countdownLabel = countdownToArrival(order.arrival_time || '');
-                const countdownColor = countdownLabel.includes('overdue') ? '#dc2626' : '#0f766e';
+                const countdownColor = countdownLabel === '-' ? '#6b7280' : (countdownLabel === 'customer sampai' ? '#033187' : '#0f766e');
 
                 const cardHtml = `
                     <div class="order-card ${cardClass}" id="card-${order.pkey}">

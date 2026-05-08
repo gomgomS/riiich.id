@@ -20,9 +20,63 @@
             #sidebar-backdrop { display:none !important; }
         }
         .menu-thumb { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid #e5e7eb; background: #f9fafb; }
+        .form-input { transition: border-color .15s ease, box-shadow .15s ease; padding-left: 0.875rem; padding-right: 0.875rem; }
+        .form-input:focus { outline: none; border-color: #033187; box-shadow: 0 0 0 3px rgba(3,49,135,.15); }
+        /* Extra inset so card content is not flush to edges (utilities above may be absent from admin.output.css) */
+        .mm-main-pad { padding: 1.75rem 1.25rem 2.5rem; }
+        @media (min-width: 640px) {
+            .mm-main-pad { padding: 2rem 2rem 3rem; }
+        }
+        @media (min-width: 1024px) {
+            .mm-main-pad { padding: 2rem 2.5rem 3rem; }
+        }
+        .mm-card-head { padding: 1.125rem 1.5rem; }
+        @media (min-width: 640px) {
+            .mm-card-head { padding: 1.25rem 2rem; }
+        }
+        .mm-card-body { padding: 1.5rem 1.5rem; }
+        @media (min-width: 640px) {
+            .mm-card-body { padding: 1.75rem 2rem; }
+        }
+        .mm-list-body { padding: 1.75rem 1.5rem 2.25rem; }
+        @media (min-width: 640px) {
+            .mm-list-body { padding: 2rem 2rem 2.5rem; }
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-gray-100">
+{% macro menu_row(m) -%}
+<div class="flex flex-col md:flex-row md:items-center gap-4 px-6 py-5 bg-white hover:bg-blue-50 rounded-xl border border-gray-100 transition-colors">
+    <div class="shrink-0 flex justify-center md:justify-start">
+        {% if m.image_url %}
+        <img class="menu-thumb" src="{{ m.image_url }}" alt="{{ m.name }}">
+        {% else %}
+        <div class="menu-thumb flex items-center justify-center text-xs text-center text-gray-400 px-2">Tanpa foto</div>
+        {% endif %}
+    </div>
+    <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+            <h3 class="font-semibold text-gray-900 truncate text-sm md:text-base">{{ m.name }}</h3>
+            {% if m.is_available %}
+            <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-100 text-green-800">Tersedia</span>
+            {% else %}
+            <span class="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">Disembunyikan</span>
+            {% endif %}
+        </div>
+        <div class="text-xs text-gray-600 mb-1">Rp {{ "{:,}".format((m.price or 0)|int).replace(",", ".") }}</div>
+        {% if m.description %}
+        <p class="text-xs text-gray-500">{{ m.description }}</p>
+        {% endif %}
+    </div>
+    <div class="flex shrink-0 items-center gap-2 justify-end md:flex-col md:justify-center">
+        <a href="/admin/menu?edit_menu_id={{ m.menu_id }}" class="inline-flex justify-center px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-gray-800 hover:bg-gray-50 shadow-sm">Edit</a>
+        <form method="POST" action="/admin/menu/delete" onsubmit="return confirm('Hapus menu ini?')" class="inline">
+            <input type="hidden" name="menu_id" value="{{ m.menu_id }}">
+            <button type="submit" class="w-full px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-50">Hapus</button>
+        </form>
+    </div>
+</div>
+{%- endmacro %}
     <aside id="admin-sidebar" class="w-64 bg-white shadow-xl flex flex-col h-full z-20">
         <div class="h-16 flex items-center justify-center border-b border-gray-100">
             <span class="text-2xl font-bold text-[#033187] tracking-wider font-playfair">RENRICH</span>
@@ -56,134 +110,188 @@
             <div class="text-sm font-medium text-gray-600">{{ admin_name }}</div>
         </header>
 
-        <div class="p-6 overflow-y-auto">
-            <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-2">
-                <span class="text-xs font-semibold text-gray-500 mr-2">Quick Jump:</span>
-                <a href="#type-section" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">Input Type</a>
-                <a href="#menu-form-section" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">Input Menu</a>
-                <a href="#menu-list-section" class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">Daftar Menu</a>
+        <div class="mm-main-pad overflow-y-auto max-w-6xl mx-auto w-full">
+            <div class="bg-white rounded-xl border border-gray-200 mm-card-head mb-6 flex flex-wrap items-center gap-3 shadow-sm">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wide mr-1">Lompat ke</span>
+                <a href="#type-section" class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold text-[#033187] bg-blue-50 hover:bg-gray-50">Input type</a>
+                <a href="#menu-form-section" class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold text-[#033187] bg-blue-50 hover:bg-gray-50">Input menu</a>
+                <a href="#menu-list-section" class="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold text-[#033187] bg-blue-50 hover:bg-gray-50">Daftar menu</a>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-1 space-y-6">
-                    <div id="type-section" class="bg-white rounded-xl border border-gray-200 p-5">
-                        <h2 class="text-lg font-bold text-gray-800 mb-4">Input Type</h2>
-                        <form method="POST" action="/admin/menu/type/save" class="mb-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+                <div id="type-section" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="mm-card-head border-b border-gray-100 bg-gray-50">
+                        <h2 class="text-base font-bold text-gray-900">Input type kategori</h2>
+                        <p class="text-xs text-gray-500 mt-1">Tambah atau edit label seperti Coffee, Makanan, Non-kopi.</p>
+                    </div>
+                    <div class="mm-card-body flex-1 flex flex-col">
+                        <form method="POST" action="/admin/menu/type/save" class="space-y-5 mb-8">
                             <input type="hidden" name="type_id" value="{{ edit_type.type_id if edit_type else '' }}">
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Type</label>
-                            <input name="type_name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" value="{{ edit_type.name if edit_type else '' }}" placeholder="Contoh: Coffee / Non-Coffee / Food" required>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button type="submit" class="bg-[#033187] text-white rounded-lg py-2 text-sm font-semibold hover:bg-[#02308E]">Simpan Type</button>
-                                <a href="/admin/menu" class="bg-white text-center text-gray-700 border border-gray-300 rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Reset</a>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Nama type</label>
+                                <input name="type_name" type="text" class="form-input w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm shadow-sm" value="{{ edit_type.name if edit_type else '' }}" placeholder="Contoh: Coffee, Food, Minuman" required>
+                            </div>
+                            <div class="flex flex-col md:flex-row gap-2">
+                                <button type="submit" class="flex-1 bg-[#033187] text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-[#02308E] shadow-sm">Simpan type</button>
+                                <a href="/admin/menu" class="flex-1 text-center text-gray-700 border border-gray-300 rounded-lg py-2.5 text-sm font-semibold hover:bg-gray-50">Batal / reset</a>
                             </div>
                         </form>
-
-                        <div class="space-y-2">
-                            {% if menu_types and menu_types|length > 0 %}
-                                {% for t in menu_types %}
-                                <div class="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2">
-                                    <div class="text-sm font-medium text-gray-700">{{ t.name }}</div>
-                                    <div class="flex items-center gap-1">
-                                        <a href="/admin/menu?edit_type_id={{ t.type_id }}" class="px-2 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50">Edit</a>
-                                        <form method="POST" action="/admin/menu/type/delete" onsubmit="return confirm('Hapus type ini?')" class="inline">
-                                            <input type="hidden" name="type_id" value="{{ t.type_id }}">
-                                            <button type="submit" class="px-2 py-1 text-xs border border-red-200 bg-red-50 text-red-600 rounded-md hover:bg-red-100">Hapus</button>
-                                        </form>
+                        <div class="border-t border-gray-100 pt-6 flex-1">
+                            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Type terdaftar</h3>
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                {% if menu_types and menu_types|length > 0 %}
+                                    {% for t in menu_types %}
+                                    <div class="flex items-center justify-between gap-3 border border-gray-100 rounded-lg px-4 py-3 bg-gray-50">
+                                        <span class="text-sm font-medium text-gray-800 truncate">{{ t.name }}</span>
+                                        <div class="flex items-center gap-1 shrink-0">
+                                            <a href="/admin/menu?edit_type_id={{ t.type_id }}" class="px-2 py-1 text-xs font-semibold border border-gray-300 rounded-md bg-white hover:bg-gray-50">Edit</a>
+                                            <form method="POST" action="/admin/menu/type/delete" onsubmit="return confirm('Hapus type ini?')" class="inline">
+                                                <input type="hidden" name="type_id" value="{{ t.type_id }}">
+                                                <button type="submit" class="px-2 py-1 text-xs font-semibold border border-red-200 bg-red-50 text-red-600 rounded-md hover:bg-red-50">Hapus</button>
+                                            </form>
+                                        </div>
                                     </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-xs text-gray-400">Belum ada type. Tambahkan type baru.</div>
-                            {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-xs text-gray-400">Belum ada type. Buat type dulu supaya bisa dipakai di form menu.</p>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div id="menu-form-section" class="bg-white rounded-xl border border-gray-200 p-5">
-                        <h2 class="text-lg font-bold text-gray-800 mb-4">Input Menu</h2>
-                        <form method="POST" action="/admin/menu/save" enctype="multipart/form-data">
+                <div id="menu-form-section" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="mm-card-head border-b border-gray-100 bg-gray-50">
+                        <h2 class="text-base font-bold text-gray-900">Input menu</h2>
+                        <p class="text-xs text-gray-500 mt-1">Isi detail menu; gambar bisa diunggah langsung.</p>
+                    </div>
+                    <div class="mm-card-body">
+                        <form method="POST" action="/admin/menu/save" enctype="multipart/form-data" class="space-y-5">
                             <input type="hidden" name="menu_id" value="{{ edit_menu.menu_id if edit_menu else '' }}">
                             <input type="hidden" name="image_url" value="{{ edit_menu.image_url if edit_menu else '' }}">
 
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Menu</label>
-                            <input name="name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" value="{{ edit_menu.name if edit_menu else '' }}" placeholder="Contoh: Caramel Latte" required>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Nama menu</label>
+                                <input name="name" type="text" class="form-input w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm shadow-sm" value="{{ edit_menu.name if edit_menu else '' }}" placeholder="Contoh: Caramel Latte" required>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Type / kategori</label>
+                                    <input name="category" list="menu-category-list" type="text" class="form-input w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm shadow-sm" value="{{ edit_menu.category if edit_menu else '' }}" placeholder="Pilih atau ketik nama type" required>
+                                    <datalist id="menu-category-list">
+                                        {% for t in menu_types %}
+                                        <option value="{{ t.name }}"></option>
+                                        {% endfor %}
+                                    </datalist>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Harga (Rp)</label>
+                                    <input name="price" type="number" min="0" class="form-input w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm shadow-sm" value="{{ edit_menu.price if edit_menu else '' }}" placeholder="35000" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Deskripsi</label>
+                                <textarea name="description" class="form-input w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm shadow-sm" rows="3" placeholder="Ringkasan menu untuk tamu">{{ edit_menu.description if edit_menu else '' }}</textarea>
+                            </div>
+                            <p class="text-xs text-gray-500">Saran: samakan nama type dengan daftar type di atas supaya konsisten untuk grup di bawah.</p>
 
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Type Menu</label>
-                            <input name="category" list="menu-category-list" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-1" value="{{ edit_menu.category if edit_menu else '' }}" placeholder="Pilih type dari dropdown" required>
-                            <datalist id="menu-category-list">
-                                {% for t in menu_types %}
-                                <option value="{{ t.name }}"></option>
-                                {% endfor %}
-                            </datalist>
-                            <p class="text-[11px] text-gray-500 mb-3">Dropdown ini mengambil type dari card Input Type.</p>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">Foto menu</label>
+                                <input name="image" type="file" accept="image/*" class="form-input block w-full text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 shadow-sm">
+                                {% if edit_menu and edit_menu.image_url %}
+                                <div class="mt-3">
+                                    <p class="text-xs text-gray-500 mb-1">Pratinjau saat ini</p>
+                                    <img src="{{ edit_menu.image_url }}" alt="{{ edit_menu.name }}" class="w-full max-h-44 object-cover rounded-lg border border-gray-200">
+                                </div>
+                                {% endif %}
+                            </div>
 
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Harga</label>
-                            <input name="price" type="number" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" value="{{ edit_menu.price if edit_menu else '' }}" placeholder="35000" required>
-
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Deskripsi</label>
-                            <textarea name="description" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" rows="3" placeholder="Deskripsi singkat menu">{{ edit_menu.description if edit_menu else '' }}</textarea>
-
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">Upload Gambar Menu</label>
-                            <input name="image" type="file" accept="image/*" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2">
-                            {% if edit_menu and edit_menu.image_url %}
-                            <img src="{{ edit_menu.image_url }}" alt="{{ edit_menu.name }}" class="w-full h-40 object-cover rounded-lg border border-gray-200 mb-3">
-                            {% endif %}
-
-                            <label class="inline-flex items-center gap-2 mb-4">
-                                <input name="is_available" type="checkbox" {% if not edit_menu or edit_menu.is_available %}checked{% endif %}>
-                                <span class="text-sm text-gray-700">Tersedia untuk pelanggan</span>
+                            <label class="inline-flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-100 bg-gray-50 cursor-pointer hover:bg-gray-50">
+                                <input name="is_available" type="checkbox" class="rounded border-gray-300" {% if not edit_menu or edit_menu.is_available %}checked{% endif %}>
+                                <span class="text-sm text-gray-700">Tampilkan ke pelanggan (tersedia)</span>
                             </label>
 
-                            <div class="grid grid-cols-2 gap-2">
-                                <button type="submit" class="bg-[#033187] text-white rounded-lg py-2 text-sm font-semibold hover:bg-[#02308E]">Simpan Menu</button>
-                                <a href="/admin/menu" class="bg-white text-center text-gray-700 border border-gray-300 rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Reset</a>
+                            <div class="flex flex-col md:flex-row gap-3 pt-2">
+                                <button type="submit" class="flex-1 bg-[#033187] text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-[#02308E] shadow-sm">Simpan menu</button>
+                                <a href="/admin/menu" class="flex-1 text-center text-gray-700 border border-gray-300 rounded-lg py-2.5 text-sm font-semibold hover:bg-gray-50">Batal / reset</a>
                             </div>
                         </form>
                     </div>
                 </div>
+            </div>
 
-                <div id="menu-list-section" class="lg:col-span-2">
-                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                            <h2 class="text-lg font-bold text-gray-800">Daftar Menu</h2>
-                            <span class="text-xs font-bold bg-blue-50 text-[#033187] px-2 py-1 rounded-full">{{ menus|length }} item</span>
+            <section id="menu-list-section">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="mm-card-head border-b border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-gray-50">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-900">Daftar menu per type</h2>
+                            <p class="text-xs text-gray-500 mt-1">Menu dikelompokkan mengikuti kategori yang tersimpan.</p>
                         </div>
+                        <span class="text-xs font-bold bg-blue-50 text-[#033187] px-3 py-1 rounded-full border border-gray-200">{{ menus|length }} item</span>
+                    </div>
+                    <div class="mm-list-body space-y-8">
                         {% if menus and menus|length > 0 %}
-                            <div class="divide-y divide-gray-100">
+                            {% for t in menu_types %}
+                                {% set gname = (t.name or '')|trim %}
+                                {% set ns = namespace(count=0) %}
                                 {% for m in menus %}
-                                <div class="p-4 flex items-center gap-4">
-                                    {% if m.image_url %}
-                                    <img class="menu-thumb" src="{{ m.image_url }}" alt="{{ m.name }}">
-                                    {% else %}
-                                    <div class="menu-thumb flex items-center justify-center text-xs text-gray-400">No Image</div>
-                                    {% endif %}
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <h3 class="font-semibold text-gray-800 truncate">{{ m.name }}</h3>
-                                            {% if m.is_available %}
-                                            <span class="text-xs font-bold px-2 py-1 rounded-full bg-green-50 text-green-700">Available</span>
-                                            {% else %}
-                                            <span class="text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-600">Hidden</span>
-                                            {% endif %}
-                                        </div>
-                                        <div class="text-xs text-gray-500 mb-1">{{ m.category or 'Uncategorized' }} • Rp {{ "{:,}".format((m.price or 0)|int).replace(",", ".") }}</div>
-                                        <div class="text-xs text-gray-400 truncate">{{ m.description or '' }}</div>
+                                    {% if ((m.category or '')|trim) == gname %}{% set ns.count = ns.count + 1 %}{% endif %}
+                                {% endfor %}
+                                {% if ns.count > 0 %}
+                                <div>
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <h3 class="text-sm font-bold text-[#033187]">{{ gname }}</h3>
+                                        <span class="text-xs font-bold uppercase text-gray-400">{{ ns.count }} menu</span>
+                                        <span class="flex-1 h-px bg-gray-200"></span>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <a href="/admin/menu?edit_menu_id={{ m.menu_id }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 bg-white hover:bg-gray-50">Edit</a>
-                                        <form method="POST" action="/admin/menu/delete" onsubmit="return confirm('Hapus menu ini?')" class="inline">
-                                            <input type="hidden" name="menu_id" value="{{ m.menu_id }}">
-                                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100">Delete</button>
-                                        </form>
+                                    <div class="space-y-4">
+                                        {% for m in menus %}
+                                            {% if ((m.category or '')|trim) == gname %}
+                                                {{ menu_row(m) }}
+                                            {% endif %}
+                                        {% endfor %}
                                     </div>
                                 </div>
+                                {% endif %}
+                            {% endfor %}
+                            {% set other_ns = namespace(count=0) %}
+                            {% for m in menus %}
+                                {% set cat = (m.category or '')|trim %}
+                                {% set match = namespace(found=false) %}
+                                {% for t in menu_types %}
+                                    {% if cat == ((t.name or '')|trim) %}{% set match.found = true %}{% endif %}
                                 {% endfor %}
+                                {% if not match.found %}{% set other_ns.count = other_ns.count + 1 %}{% endif %}
+                            {% endfor %}
+                            {% if other_ns.count > 0 %}
+                            <div>
+                                <div class="flex items-center gap-3 mb-4">
+                                    <h3 class="text-sm font-bold text-gray-700">Lainnya / tidak cocok dengan type terdaftar</h3>
+                                    <span class="text-xs font-bold uppercase text-gray-400">{{ other_ns.count }} menu</span>
+                                    <span class="flex-1 h-px bg-gray-200"></span>
+                                </div>
+                                <div class="space-y-4">
+                                    {% for m in menus %}
+                                        {% set cat = (m.category or '')|trim %}
+                                        {% set match = namespace(found=false) %}
+                                        {% for t in menu_types %}
+                                            {% if cat == ((t.name or '')|trim) %}{% set match.found = true %}{% endif %}
+                                        {% endfor %}
+                                        {% if not match.found %}
+                                            {{ menu_row(m) }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
                             </div>
+                            {% endif %}
                         {% else %}
-                            <div class="p-6 text-center text-sm text-gray-500">Belum ada menu. Tambahkan dari form di kiri.</div>
+                            <div class="text-center py-12 text-sm text-gray-500 border border-dashed border-gray-200 rounded-xl bg-gray-50">
+                                Belum ada menu. Gunakan formulir <strong>Input menu</strong> di atas.
+                            </div>
                         {% endif %}
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
 
