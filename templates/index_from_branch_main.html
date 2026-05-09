@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% block title %}Renrich - Premium Coffee & Roastery{% endblock %}
+
+{% block content %}
+    <!-- Hero Slider Section -->
+    <div class="hero-slider">
+        <!-- SLIDE 1 -->
+        <div class="hero-slide active">
+            <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=2000"
+                alt="Coffee Shop Interior">
+            <div class="hero-overlay" style="background: rgba(3, 49, 135, 0.62);"></div>
+            <div class="hero-content">
+                <div class="hero-subtitle text-sm md:text-base font-bold uppercase mb-4">Welcome to Renrich</div>
+                <div class="hero-title text-5xl md:text-7xl text-white font-playfair mb-6">Experience True Coffee</div>
+                <div class="hero-desc text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-8">
+                    Nikmati sajian kopi premium di tengah suasana yang hangat dan elegan. Mahakarya rasa dalam setiap cangkir.
+                </div>
+                <div class="hero-btn">
+                    <a href="#menu" class="inline-block text-lg font-semibold px-8 py-3 rounded-full shadow-xl transition-all duration-300">
+                        Lihat Menu
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2 -->
+        <div class="hero-slide">
+            <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=2000"
+                alt="Barista Making Coffee">
+            <div class="hero-overlay" style="background: rgba(3, 49, 135, 0.62);"></div>
+            <div class="hero-content">
+                <div class="hero-subtitle text-sm md:text-base font-bold uppercase mb-4">Artisan Roastery</div>
+                <div class="hero-title text-5xl md:text-7xl text-white font-playfair mb-6">Crafted with Passion</div>
+                <div class="hero-desc text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-8">
+                    Biji kopi pilihan yang diolah oleh barista berpengalaman untuk rasa yang tak terlupakan.
+                </div>
+                <div class="hero-btn">
+                    <a href="#about" class="outline-btn inline-block text-lg font-semibold px-8 py-3 rounded-full shadow-xl transition-all duration-300">
+                        Kisah Kami
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3 -->
+        <div class="hero-slide">
+            <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=2000"
+                alt="Cozy Coffee Shop Seating">
+            <div class="hero-overlay" style="background: rgba(3, 49, 135, 0.62);"></div>
+            <div class="hero-content">
+                <div class="hero-subtitle text-sm md:text-base font-bold uppercase mb-4">Cozy Atmosphere</div>
+                <div class="hero-title text-5xl md:text-7xl text-white font-playfair mb-6">Your Second Home</div>
+                <div class="hero-desc text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-8">
+                    Tempat yang sempurna untuk bersantai, bekerja, atau berkumpul bersama orang terkasih.
+                </div>
+                <div class="hero-btn">
+                    <a href="{{ data.whatsapp_url }}" target="_blank" class="inline-block text-lg font-semibold px-8 py-3 rounded-full shadow-xl transition-all duration-300">
+                        Reservasi Meja
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-nav hero-prev">&#10094;</div>
+        <div class="hero-nav hero-next">&#10095;</div>
+    </div>
+
+    <!-- About Section -->
+    <section id="about" class="pt-32 pb-36 md:pt-36 md:pb-40 bg-white relative overflow-hidden">
+        <!-- Decorative element -->
+        <div class="absolute top-0 right-0 w-64 h-64 bg-renrich-cream rounded-full opacity-50 transform translate-x-1/2 -translate-y-1/2"></div>
+        <div class="absolute bottom-0 left-0 w-48 h-48 bg-renrich-cream rounded-full opacity-50 transform -translate-x-1/2 translate-y-1/2"></div>
+        
+        <div class="max-w-6xl mx-auto px-4 relative z-10 flex flex-col md:flex-row items-center gap-16 md:gap-20">
+            <div class="w-full md:w-1/2 flex justify-center md:justify-end md:pr-8">
+                <div class="relative inline-block">
+                    <img src="{{ url_for('static', filename='assets/img/logo_renrich.jpg') }}" alt="Renrich Logo" class="rounded-full shadow-xl w-36 h-36 md:w-44 md:h-44 object-cover border-4 border-white ring-2 ring-renrich-light">
+                    <div class="absolute -bottom-3 -right-3 bg-renrich-dark text-white px-4 py-3 rounded-xl shadow-lg hidden md:block border border-renrich-light">
+                        <p class="font-playfair text-lg font-bold tracking-wide">Est. 2024</p>
+                        <p class="text-xs opacity-80 uppercase tracking-wider mt-1">Premium</p>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full md:w-1/2 text-left md:pl-2">
+                <h2 class="text-renrich-gold font-bold uppercase tracking-wider mb-3">Our Story</h2>
+                <h3 class="text-4xl md:text-5xl font-playfair font-bold text-renrich-dark mb-8">Renrich Coffee</h3>
+                <p class="text-lg text-gray-600 leading-relaxed mb-7">
+                    Renrich hadir dari dedikasi kami untuk memberikan pengalaman ngopi terbaik. Kami menyajikan kopi dari biji nusantara pilihan yang di-roast dengan presisi, menghasilkan profil rasa yang mewah dan otentik.
+                </p>
+                <p class="text-lg text-gray-600 leading-relaxed mb-10">
+                    Bukan sekadar tempat ngopi, Renrich adalah destinasi di mana kehangatan, desain elegan, dan cita rasa menyatu secara harmonis.
+                </p>
+                <a href="#menu" class="text-renrich-dark font-semibold hover:text-renrich-gold transition duration-300 border-b-2 border-renrich-gold pb-1 inline-flex items-center gap-2">
+                    Jelajahi Menu Kami 
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Section -->
+    <section id="menu" class="pt-32 pb-32 md:pt-36 md:pb-36 bg-renrich-light">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-renrich-dark font-bold uppercase tracking-wider mb-2">Taste The Excellence</h2>
+                <h3 class="text-4xl md:text-5xl font-playfair font-bold text-renrich-dark mb-4 section-title pb-4">Signature Menu</h3>
+                <p class="text-lg text-gray-500 mt-6">Koleksi minuman dan hidangan terbaik dari barista kami.</p>
+            </div>
+
+            <!-- Menu Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                
+                <!-- Item 1 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&q=80&w=800" alt="Renrich Signature Latte" class="w-full h-full object-cover">
+                        <div class="absolute top-4 right-4 bg-renrich-dark text-white text-xs font-bold px-3 py-1 rounded-full shadow">Bestseller</div>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Renrich Signature Latte</h4>
+                            <span class="text-xl font-bold text-renrich-dark">Rp 45k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Perpaduan sempurna antara espresso house blend kami, susu segar, dan sirup karamel buatan sendiri dengan taburan sea salt.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Renrich%20Signature%20Latte" target="_blank" class="w-full text-center border-2 border-renrich-dark text-renrich-dark hover:bg-renrich-dark hover:text-white hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1610889556528-9a770e32642f?auto=format&fit=crop&q=80&w=800" alt="Espresso Arabica" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Premium Espresso</h4>
+                            <span class="text-xl font-bold text-renrich-dark">Rp 30k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Ekstraksi murni dari biji kopi Arabica pilihan dengan notes cokelat hitam dan sedikit sentuhan buah berry.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Premium%20Espresso" target="_blank" class="w-full text-center border-2 border-renrich-dark text-renrich-dark hover:bg-renrich-dark hover:text-white hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1515823064-d6e0c04616a7?auto=format&fit=crop&q=80&w=800" alt="Matcha Fusion" class="w-full h-full object-cover">
+                        <div class="absolute top-4 right-4 bg-renrich-dark text-white text-xs font-bold px-3 py-1 rounded-full shadow">New</div>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Matcha Fusion</h4>
+                            <span class="text-xl font-bold text-renrich-dark">Rp 42k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Bubuk matcha Uji premium dari Jepang yang di-whisk sempurna, dipadukan dengan susu oat yang creamy.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Matcha%20Fusion" target="_blank" class="w-full text-center border-2 border-renrich-dark text-renrich-dark hover:bg-renrich-dark hover:text-white hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 4 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1558401391-7899b4bd5bbf?auto=format&fit=crop&q=80&w=800" alt="Classic Affogato" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Classic Affogato</h4>
+                            <span class="text-xl font-bold text-renrich-dark">Rp 38k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Kombinasi klasik es krim vanilla bean yang lembut disiram dengan double shot espresso panas.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Classic%20Affogato" target="_blank" class="w-full text-center border-2 border-renrich-dark text-renrich-dark hover:bg-renrich-dark hover:text-white hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 5 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=800" alt="Artisanal Croissant" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Butter Croissant</h4>
+                            <span class="text-xl font-bold text-renrich-dark">Rp 28k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Croissant yang dipanggang segar setiap hari dengan lapisan mentega Prancis yang renyah di luar dan lembut di dalam.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Butter%20Croissant" target="_blank" class="w-full text-center border-2 border-renrich-dark text-renrich-dark hover:bg-renrich-dark hover:text-white hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Item 6 -->
+                <div class="menu-card rounded-2xl overflow-hidden flex flex-col">
+                    <div class="menu-img-wrap h-64 relative">
+                        <img src="https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&q=80&w=800" alt="Iced Caramel Macchiato" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="text-2xl font-playfair font-bold text-renrich-dark">Caramel Macchiato</h4>
+                            <span class="text-xl font-bold text-renrich-dark">Rp 40k</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 flex-grow">Minuman dingin menyegarkan dengan paduan vanilla, susu, espresso layer, dan drizzle karamel di atasnya.</p>
+                        <a href="{{ data.whatsapp_url }}?text=Halo,%20saya%20ingin%20memesan%20Caramel%20Macchiato" target="_blank" class="w-full text-center border-2 border-renrich-dark text-renrich-dark hover:bg-renrich-dark hover:text-white hover:border-renrich-dark font-semibold py-3 rounded-full transition duration-300">
+                            Pesan Sekarang
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Atmosphere/Gallery Section -->
+    <section class="pt-28 pb-28 md:pt-32 md:pb-32 bg-renrich-dark text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-renrich-gold font-bold uppercase tracking-wider mb-2">Our Space</h2>
+            <h3 class="text-4xl md:text-5xl font-playfair font-bold mb-12">The Renrich Experience</h3>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="overflow-hidden rounded-xl h-48 md:h-64">
+                    <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover hover:scale-110 transition duration-500" alt="Coffee pouring">
+                </div>
+                <div class="overflow-hidden rounded-xl h-48 md:h-64 mt-4 md:mt-8">
+                    <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover hover:scale-110 transition duration-500" alt="Coffee beans">
+                </div>
+                <div class="overflow-hidden rounded-xl h-48 md:h-64">
+                    <img src="https://images.unsplash.com/photo-1525610553991-2bede1a236e2?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover hover:scale-110 transition duration-500" alt="Interior">
+                </div>
+                <div class="overflow-hidden rounded-xl h-48 md:h-64 mt-4 md:mt-8">
+                    <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover hover:scale-110 transition duration-500" alt="Barista">
+                </div>
+            </div>
+        </div>
+    </section>
+
+{% endblock %}

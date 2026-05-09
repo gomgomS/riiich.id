@@ -3,19 +3,15 @@
 {% block title %}Reservasi - Renrich Coffee{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <style>
-    /* Wizard Steps */
+    /* Wizard steps: use display only — opacity/transform on ancestors breaks native date/time UI on Chrome Android */
     .step-content {
         display: none;
-        opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.4s ease;
     }
 
     .step-content.active {
         display: block;
-        opacity: 1;
-        transform: translateY(0);
     }
 
     /* Input Styling */
@@ -33,6 +29,21 @@
         background-color: #fff;
         border-color: #02308E;
         box-shadow: 0 0 0 4px rgba(2, 48, 142, 0.1);
+    }
+
+    /* Leading icon inside field (WhatsApp): keep text clear of icon — avoid shorthand padding clash with utilities */
+    #res-wa.premium-input {
+        padding-left: 3rem;
+    }
+
+    .res-wa-field-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+        pointer-events: none;
+        color: #9ca3af;
     }
 
     /* SVG Table Map */
@@ -212,6 +223,51 @@
         background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(10px);
     }
+
+    /* Flatpickr (all viewports): above sticky header + floating WA */
+    .flatpickr-calendar {
+        z-index: 10020 !important;
+    }
+
+    .flatpickr-day.selected,
+    .flatpickr-day.startRange,
+    .flatpickr-day.endRange,
+    .flatpickr-day.selected:hover {
+        background: #033187;
+        border-color: #033187;
+    }
+
+    html.res-date-picker-active #site-whatsapp-fab {
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+    }
+
+    #res-arrival-date.premium-input,
+    #res-arrival-time.premium-input {
+        cursor: pointer;
+        background-color: #fff;
+    }
+
+    .res-arrival-date-shell,
+    .res-arrival-time-shell {
+        position: relative;
+        z-index: 1;
+    }
+
+    @media (max-width: 767px) {
+        .glass-card {
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        #res-arrival-date.premium-input,
+        #res-arrival-time.premium-input {
+            font-size: 16px;
+            min-height: 3rem;
+            touch-action: manipulation;
+        }
+    }
 </style>
 
 <div class="bg-[#033187] pb-32 pt-16 relative">
@@ -291,13 +347,13 @@
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Nomor WhatsApp <span
                                 class="text-red-500">*</span></label>
                         <div class="relative">
-                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <span class="res-wa-field-icon" aria-hidden="true">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                     <path
                                         d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
                                 </svg>
                             </span>
-                            <input type="text" id="res-wa" class="premium-input pl-12" placeholder="0812 3456 7890">
+                            <input type="text" id="res-wa" class="premium-input" placeholder="0812 3456 7890" inputmode="tel" autocomplete="tel">
                         </div>
                     </div>
                     <div>
@@ -333,16 +389,13 @@
                 <div class="mb-6 bg-white border border-gray-100 rounded-2xl p-4 md:p-5 shadow-sm">
                     <label class="block text-sm font-semibold text-gray-700 mb-3">Perkiraan Waktu Kedatangan <span class="text-red-500">*</span></label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Tanggal</label>
-                            <input type="date" id="res-arrival-date" class="premium-input">
+                        <div class="min-w-0 overflow-visible res-arrival-date-shell">
+                            <label class="block text-xs text-gray-500 mb-1" for="res-arrival-date">Tanggal</label>
+                            <input type="text" id="res-arrival-date" class="premium-input w-full" placeholder="Pilih tanggal" autocomplete="off" readonly>
                         </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Jam (format 24 jam)</label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <select id="res-arrival-hour" class="premium-input"></select>
-                                <select id="res-arrival-minute" class="premium-input"></select>
-                            </div>
+                        <div class="min-w-0 overflow-visible res-arrival-time-shell">
+                            <label class="block text-xs text-gray-500 mb-1" for="res-arrival-time">Jam kedatangan (WIB, 24 jam)</label>
+                            <input type="text" id="res-arrival-time" class="premium-input w-full" placeholder="Pilih jam" autocomplete="off" readonly>
                         </div>
                     </div>
                 </div>
@@ -496,8 +549,8 @@
                         <div class="flex justify-between items-start mb-4">
                             <div class="w-full">
                                 {% if menu.image_url %}
-                                <div class="mb-3 rounded-lg overflow-hidden border border-gray-100">
-                                    <img src="{{ menu.image_url }}" alt="{{ menu.name or 'Menu' }}" class="w-full h-36 object-cover">
+                                <div class="mb-3 rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center p-2 min-h-[7rem]">
+                                    <img src="{{ menu.image_url }}" alt="{{ menu.name or 'Menu' }}" loading="lazy" decoding="async" class="block max-w-full max-h-[min(60vh,28rem)] w-auto h-auto object-contain mx-auto rounded-md">
                                 </div>
                                 {% endif %}
                                 <span class="bg-blue-50 text-[#033187] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">
@@ -690,6 +743,8 @@
 </script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/id.js"></script>
 <script>
     let reservationData = {
         contact: { name: "", whatsapp: "" },
@@ -706,6 +761,9 @@
         service_timing: "Serve on Arrival",
         total_amount: 0
     };
+
+    let arrivalDateFlatpickr = null;
+    let arrivalTimeFlatpickr = null;
 
     function getTableDisplayName(table) {
         if (!table) return '';
@@ -940,7 +998,7 @@
         let isPanning = false, startX = 0, startY = 0;
         let panX = 0, panY = 0;
         let zoom = 1;
-        const MIN_ZOOM = 0.2, MAX_ZOOM = 5, ZOOM_STEP = 0.15;
+        const MIN_ZOOM = 0.45, MAX_ZOOM = 1.10, ZOOM_STEP = 0.15;
         const BUFFER = 60;
 
         function updateZoomLabel() {
@@ -971,8 +1029,8 @@
             const cW = container.clientWidth;
             const cH = container.clientHeight;
             if (!cW || !cH || !contentW || !contentH) return;
-            // Fit whole map, never exceed 1x zoom on initial view
-            zoom = Math.min(1, cW / contentW, cH / contentH);
+            // Fit whole map (cap at 100% scale), clamp to reservation zoom range 45%–110%
+            zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min(1, cW / contentW, cH / contentH)));
             // Center the scaled content inside the container
             panX = (cW - contentW * zoom) / 2;
             panY = (cH - contentH * zoom) / 2;
@@ -1108,9 +1166,22 @@
         const dd = String(now.getDate()).padStart(2, '0');
         const hh = String(now.getHours()).padStart(2, '0');
         const mi = String(now.getMinutes()).padStart(2, '0');
-        document.getElementById('res-arrival-date').value = `${yyyy}-${mm}-${dd}`;
-        document.getElementById('res-arrival-hour').value = `${hh}`;
-        document.getElementById('res-arrival-minute').value = `${mi}`;
+        const iso = `${yyyy}-${mm}-${dd}`;
+        if (arrivalDateFlatpickr) {
+            arrivalDateFlatpickr.setDate(iso, false);
+        } else {
+            document.getElementById('res-arrival-date').value = iso;
+        }
+        const d = new Date();
+        d.setHours(parseInt(hh, 10), parseInt(mi, 10), 0, 0);
+        if (arrivalTimeFlatpickr) {
+            arrivalTimeFlatpickr.setDate(d, false);
+        } else {
+            const tel = document.getElementById('res-arrival-time');
+            if (tel) {
+                tel.value = `${hh}:${mi}`;
+            }
+        }
     }
 
     function parseArrivalInput(dateValue, hourValue, minuteValue) {
@@ -1121,36 +1192,77 @@
         return { iso: normalized, date: dt };
     }
 
-    function initArrivalTimeOptions() {
-        const hourEl = document.getElementById('res-arrival-hour');
-        const minuteEl = document.getElementById('res-arrival-minute');
-        if (!hourEl || !minuteEl) return;
-
-        hourEl.innerHTML = '<option value="">Jam</option>';
-        minuteEl.innerHTML = '<option value="">Menit</option>';
-
-        for (let h = 0; h <= 23; h++) {
-            const hh = String(h).padStart(2, '0');
-            hourEl.innerHTML += `<option value="${hh}">${hh}</option>`;
+    function initArrivalDatePicker() {
+        const el = document.getElementById('res-arrival-date');
+        if (!el || typeof flatpickr === 'undefined') {
+            return;
         }
-        for (let m = 0; m <= 59; m += 5) {
-            const mm = String(m).padStart(2, '0');
-            minuteEl.innerHTML += `<option value="${mm}">${mm}</option>`;
+        if (arrivalDateFlatpickr) {
+            arrivalDateFlatpickr.destroy();
+            arrivalDateFlatpickr = null;
         }
-    }
-
-    $(document).ready(function () {
-        renderMap();
-        initArrivalTimeOptions();
-        updateSeatChoiceMode();
         const now = new Date();
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
         const dd = String(now.getDate()).padStart(2, '0');
-        $('#res-arrival-date').attr('min', `${yyyy}-${mm}-${dd}`);
-        if (!$('#res-arrival-date').val() || !$('#res-arrival-hour').val() || !$('#res-arrival-minute').val()) {
+        const minD = `${yyyy}-${mm}-${dd}`;
+        const localeOpt = (flatpickr.l10ns && flatpickr.l10ns.id) ? { locale: flatpickr.l10ns.id } : {};
+        arrivalDateFlatpickr = flatpickr(el, Object.assign({
+            dateFormat: 'Y-m-d',
+            minDate: minD,
+            disableMobile: true,
+            allowInput: false,
+            clickOpens: true,
+            monthSelectorType: 'static',
+            onOpen: function () {
+                document.documentElement.classList.add('res-date-picker-active');
+            },
+            onClose: function () {
+                document.documentElement.classList.remove('res-date-picker-active');
+            }
+        }, localeOpt));
+    }
+
+    function initArrivalTimePicker() {
+        const el = document.getElementById('res-arrival-time');
+        if (!el || typeof flatpickr === 'undefined') {
+            return;
+        }
+        if (arrivalTimeFlatpickr) {
+            arrivalTimeFlatpickr.destroy();
+            arrivalTimeFlatpickr = null;
+        }
+        const localeOpt = (flatpickr.l10ns && flatpickr.l10ns.id) ? { locale: flatpickr.l10ns.id } : {};
+        arrivalTimeFlatpickr = flatpickr(el, Object.assign({
+            noCalendar: true,
+            enableTime: true,
+            dateFormat: 'H:i',
+            time_24hr: true,
+            minuteIncrement: 1,
+            disableMobile: true,
+            allowInput: false,
+            clickOpens: true,
+            defaultDate: new Date(),
+            onOpen: function () {
+                document.documentElement.classList.add('res-date-picker-active');
+            },
+            onClose: function () {
+                document.documentElement.classList.remove('res-date-picker-active');
+            }
+        }, localeOpt));
+    }
+
+    $(document).ready(function () {
+        renderMap();
+        initArrivalDatePicker();
+        initArrivalTimePicker();
+        updateSeatChoiceMode();
+        if (!$('#res-arrival-date').val() || !$('#res-arrival-time').val()) {
             setArrivalMinutes(30);
         }
+        window.addEventListener('pagehide', function () {
+            document.documentElement.classList.remove('res-date-picker-active');
+        });
     });
 
     // Update the selection panel below the map
@@ -1240,8 +1352,10 @@
 
         if (step === 3) {
             const arrivalDate = String($('#res-arrival-date').val() || '').trim();
-            const arrivalHour = String($('#res-arrival-hour').val() || '').trim();
-            const arrivalMinute = String($('#res-arrival-minute').val() || '').trim();
+            const timeVal = String($('#res-arrival-time').val() || '').trim();
+            const timeMatch = timeVal.match(/^(\d{1,2}):(\d{2})$/);
+            const arrivalHour = timeMatch ? String(parseInt(timeMatch[1], 10)).padStart(2, '0') : '';
+            const arrivalMinute = timeMatch ? timeMatch[2] : '';
             reservationData.seat_mode = $('input[name="seat-mode"]:checked').val() || 'choose';
             reservationData.seating_notes = $('#res-seat-note').val().trim();
 

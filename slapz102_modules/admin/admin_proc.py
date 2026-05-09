@@ -160,9 +160,15 @@ def get_active_orders():
     try:
         db = _get_db()
         orders = list(db["db_order"].find({
-            "$or": [
-                {"payment_status": {"$ne": "Paid"}},
-                {"fulfillment_status": {"$ne": "Done"}}
+            "$and": [
+                {
+                    "$or": [
+                        {"payment_status": {"$ne": "Paid"}},
+                        {"fulfillment_status": {"$ne": "Done"}}
+                    ]
+                },
+                {"fulfillment_status": {"$ne": "Cancelled"}},
+                {"payment_status": {"$ne": "Cancelled"}}
             ]
         }).sort("rec_timestamp", -1))
         
@@ -170,6 +176,96 @@ def get_active_orders():
             o["_id"] = str(o["_id"])
         
         return {"ok": True, "data": orders}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "msg": "Database error"}
+
+def update_order_transaction(order_id, payload):
+    """Admin: update guest-facing order fields (contact, arrival, notes, totals, items)."""
+    try:
+        db = _get_db()
+        if not order_id:
+            return {"ok": False, "msg": "order_id required"}
+
+        order = db["db_order"].find_one({"pkey": order_id})
+        if not order:
+            return {"ok": False, "msg": "Order not found"}
+
+        if order.get("fulfillment_status") == "Cancelled" or order.get("payment_status") == "Cancelled":
+            return {"ok": False, "msg": "Order is cancelled"}
+
+        if not isinstance(payload, dict):
+            return {"ok": False, "msg": "Invalid payload"}
+
+        set_doc = {}
+        contact = dict(order.get("contact") or {})
+        c_in = payload.get("contact")
+        if isinstance(c_in, dict):
+            if "name" in c_in:
+                contact["name"] = str(c_in.get("name", "")).strip()[:200]
+            if "whatsapp" in c_in:
+                contact["whatsapp"] = str(c_in.get("whatsapp", "")).strip()[:40]
+            set_doc["contact"] = contact
+
+        if "arrival_time" in payload:
+            set_doc["arrival_time"] = str(payload.get("arrival_time") or "").strip()[:120]
+
+        if "party_size" in payload:
+            try:
+                ps = int(payload.get("party_size"))
+                set_doc["party_size"] = max(1, min(ps, 999))
+            except (TypeError, ValueError):
+                return {"ok": False, "msg": "Invalid party_size"}
+
+        if "seating_notes" in payload:
+            set_doc["seating_notes"] = str(payload.get("seating_notes") or "").strip()[:500]
+
+        if "service_timing" in payload:
+            st = str(payload.get("service_timing") or "").strip()
+            if st in ("Serve on Arrival", "Ready after Arrival"):
+                set_doc["service_timing"] = st
+            else:
+                return {"ok": False, "msg": "Invalid service_timing"}
+
+        if "total_amount" in payload:
+            try:
+                set_doc["total_amount"] = max(0.0, float(payload.get("total_amount")))
+            except (TypeError, ValueError):
+                return {"ok": False, "msg": "Invalid total_amount"}
+
+        if "items" in payload:
+            raw_items = payload.get("items")
+            if not isinstance(raw_items, list):
+                return {"ok": False, "msg": "Invalid items"}
+            cleaned = []
+            for it in raw_items[:50]:
+                if not isinstance(it, dict):
+                    return {"ok": False, "msg": "Invalid items"}
+                name = str(it.get("name", "")).strip()[:200]
+                if not name:
+                    continue
+                try:
+                    qty = int(it.get("quantity", 1))
+                except (TypeError, ValueError):
+                    return {"ok": False, "msg": "Invalid item quantity"}
+                qty = max(1, min(qty, 999))
+                row = {"name": name, "quantity": qty}
+                iid = str(it.get("item_id", "")).strip()[:80]
+                if iid:
+                    row["item_id"] = iid
+                if it.get("price") is not None and str(it.get("price")).strip() != "":
+                    try:
+                        row["price"] = max(0.0, float(it.get("price")))
+                    except (TypeError, ValueError):
+                        return {"ok": False, "msg": "Invalid item price"}
+                cleaned.append(row)
+            set_doc["items"] = cleaned
+
+        if not set_doc:
+            return {"ok": False, "msg": "Nothing to update"}
+
+        db["db_order"].update_one({"pkey": order_id}, {"$set": set_doc})
+        return {"ok": True}
     except Exception:
         print(traceback.format_exc())
         return {"ok": False, "msg": "Database error"}
@@ -188,11 +284,11 @@ def get_reserved_tables():
 
 def release_table_by_id(table_id):
     """
-    Release a single table by table_id.
+    Release a single table by table_id (e.g. from bar "Lepas").
     - Frees the db_table record back to Available.
     - Removes this table from the linked order's table_ids array.
-    - If the order has no remaining reserved tables → auto-close (fulfillment_status=Done).
-    All logic is server-side to prevent frontend inconsistency.
+    Does NOT mark the order Done — staff still manage the trx in the kanban
+    (e.g. "Tamu Pulang" / order release) separately.
     """
     try:
         db = _get_db()
@@ -210,7 +306,6 @@ def release_table_by_id(table_id):
             {"$set": {"status": "Available", "order_pkey": "", "reserved_at": 0}}
         )
 
-        order_done = False
         remaining_tables = []
 
         if order_pkey:
@@ -220,33 +315,20 @@ def release_table_by_id(table_id):
                 {"$pull": {"table_ids": table_id}}
             )
 
-            # 3. Re-fetch the order to check remaining tables
+            # 3. Re-fetch order; align legacy table_id with remaining seats (no fulfillment change)
             order = db["db_order"].find_one({"pkey": order_pkey})
             if order:
-                remaining_ids = order.get("table_ids", [])
-
-                # Cross-check: which of the remaining IDs are still Reserved in db_table?
-                still_reserved = db["db_table"].count_documents({
-                    "table_id": {"$in": remaining_ids},
-                    "status":   {"$ne": "Available"}
-                })
-
+                remaining_ids = [str(x).strip() for x in (order.get("table_ids") or []) if str(x).strip()]
+                legacy_tid = remaining_ids[0] if remaining_ids else ""
+                db["db_order"].update_one(
+                    {"pkey": order_pkey},
+                    {"$set": {"table_id": legacy_tid}}
+                )
                 remaining_tables = remaining_ids
-
-                if still_reserved == 0:
-                    # All seats freed — close the order
-                    db["db_order"].update_one(
-                        {"pkey": order_pkey},
-                        {"$set": {
-                            "fulfillment_status": "Done",
-                            "seat_released_at":   int(time.time() * 1000)
-                        }}
-                    )
-                    order_done = True
 
         return {
             "ok":               True,
-            "order_done":       order_done,
+            "order_done":       False,
             "remaining_tables": remaining_tables
         }
     except Exception:
@@ -472,6 +554,38 @@ def set_table_status(table_id, new_status):
             update_data["reserved_at"] = table.get("reserved_at") or int(time.time() * 1000)
 
         db["db_table"].update_one({"table_id": table_id}, {"$set": update_data})
+        return {"ok": True}
+    except Exception:
+        print(traceback.format_exc())
+        return {"ok": False, "msg": "Database error"}
+
+def cancel_order(order_id):
+    """Cancel an order and free any reserved tables."""
+    try:
+        db = _get_db()
+        order = db["db_order"].find_one({"pkey": order_id})
+        if not order:
+            return {"ok": False, "msg": "Order not found"}
+
+        # Free any tables linked to this order
+        table_ids = order.get("table_ids", [])
+        if not table_ids and order.get("table_id"):
+            table_ids = [order["table_id"]]
+        if table_ids:
+            db["db_table"].update_many(
+                {"table_id": {"$in": table_ids}},
+                {"$set": {"status": "Available", "order_pkey": "", "reserved_at": 0}}
+            )
+
+        # Mark order cancelled
+        db["db_order"].update_one(
+            {"pkey": order_id},
+            {"$set": {
+                "fulfillment_status": "Cancelled",
+                "payment_status": "Cancelled",
+                "cancelled_at": int(time.time() * 1000)
+            }}
+        )
         return {"ok": True}
     except Exception:
         print(traceback.format_exc())

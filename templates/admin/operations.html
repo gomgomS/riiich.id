@@ -19,6 +19,30 @@
         .badge-takeaway { background: #fef3c7; color: #92400e; }
         .badge-dinein { background: #d1fae5; color: #065f46; }
 
+        .order-card-flow-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            vertical-align: middle;
+        }
+        .order-card-flow-tag--dinein { background: #d1fae5; color: #065f46; }
+        .order-card-flow-tag--takeaway { background: #fef3c7; color: #92400e; }
+        .order-card-flow-tag--reservation { background: #dbeafe; color: #1e3a8a; }
+
+        .order-card-compact { display: none; }
+        .order-card--minimized .order-card-full { display: none !important; }
+        .order-card--minimized .order-card-compact { display: block !important; }
+        .order-card--minimized .order-card-header { margin-bottom: 0; padding-bottom: 8px; }
+
+        .order-card-toggle-icon { display: flex; align-items: center; justify-content: center; }
+        .order-card-toggle-icon--expand { display: none; }
+        .order-card--minimized .order-card-toggle-icon--collapse { display: none; }
+        .order-card--minimized .order-card-toggle-icon--expand { display: flex; }
+
         /* Mobile: sidebar as overlay drawer (cover content, don't shift layout) */
         #sidebar-backdrop { display: none; }
         @media (max-width: 767px) {
@@ -64,7 +88,6 @@
     <aside id="admin-sidebar" class="w-64 bg-white shadow-xl flex flex-col h-full z-20 sidebar-open">
         <div class="border-b border-gray-100 px-4 py-4">
             <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-3">
-                <div class="w-9 h-9 rounded-lg bg-[#033187] text-white flex items-center justify-center font-bold text-sm">R</div>
                 <div>
                     <div class="text-sm font-bold text-[#033187] tracking-wide">RENRICH</div>
                     <div class="text-[11px] text-gray-500">Admin Console</div>
@@ -124,15 +147,15 @@
         <header class="bg-white shadow-sm border-b border-gray-100 px-4 md:px-6 py-3 z-10">
             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div class="flex items-start gap-3">
-                <button id="toggle-sidebar-btn" onclick="toggleSidebar()"
-                    class="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" title="Hide Sidebar">
-                    <svg id="toggle-sidebar-icon-open" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="toggle-sidebar-btn" type="button" onclick="toggleSidebar()"
+                    class="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white w-9 h-9 text-gray-700 hover:bg-gray-50 shrink-0"
+                    aria-label="Sembunyikan panel samping" title="Sembunyikan panel samping">
+                    <svg id="toggle-sidebar-icon-open" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
-                    <svg id="toggle-sidebar-icon-hide" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg id="toggle-sidebar-icon-hide" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
-                    <span id="toggle-sidebar-label" class="hidden md:block ml-2">Hide Sidebar</span>
                 </button>
                 <div>
                     <h1 class="text-lg font-bold text-gray-800 leading-none">Dashboard Operasional</h1>
@@ -167,8 +190,8 @@
             </div>
         </header>
 
-        <!-- Reserved Tables Bar -->
-        <div id="reserved-tables-bar" style="display:none;padding:10px 24px;background:#fffbeb;border-bottom:1px solid #fcd34d;">
+        <!-- Reserved Tables Bar (always visible; chips area shows empty copy when none) -->
+        <div id="reserved-tables-bar" style="display:block;padding:10px 24px;background:#fffbeb;border-bottom:1px solid #fcd34d;">
             <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
                 <div style="display:flex;align-items:center;gap:6px;color:#b45309;font-weight:700;font-size:13px;flex-shrink:0;">
                     <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -177,7 +200,9 @@
                 <a href="/admin/seat-map-control" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #d1d5db;color:#033187;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;text-decoration:none;">
                     Buka Kontrol Peta Kursi
                 </a>
-                <div id="reserved-chips" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+                <div id="reserved-chips" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;min-width:0;">
+                    <span style="font-size:12px;color:#78716c;font-weight:600;">semua kursi kosong/tidak terservasi</span>
+                </div>
             </div>
         </div>
 
@@ -187,39 +212,79 @@
 
                 <!-- Kolom: Belum Bayar / Menunggu Verifikasi -->
                 <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
-                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Verifikasi Pembayaran</h3>
-                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-unpaid">0</span>
+                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide truncate">Verifikasi Pembayaran</h3>
+                            <div class="flex items-center gap-1 flex-shrink-0" title="Buka / ciutkan semua kartu di kolom ini">
+                                <button type="button" class="js-col-expand-all" data-col="#col-unpaid" title="Buka semua" aria-label="Buka semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;line-height:0;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <button type="button" class="js-col-minimize-all" data-col="#col-unpaid" title="Ciutkan semua" aria-label="Ciutkan semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;line-height:0;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center flex-shrink-0" id="count-unpaid">0</span>
                     </div>
                     <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-unpaid"></div>
                 </div>
 
                 <!-- Kolom: Antrean Dapur -->
                 <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
-                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Antrean Dapur</h3>
-                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-pending">0</span>
+                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide truncate">Antrean Dapur</h3>
+                            <div class="flex items-center gap-1 flex-shrink-0" title="Buka / ciutkan semua kartu di kolom ini">
+                                <button type="button" class="js-col-expand-all" data-col="#col-pending" title="Buka semua" aria-label="Buka semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;line-height:0;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <button type="button" class="js-col-minimize-all" data-col="#col-pending" title="Ciutkan semua" aria-label="Ciutkan semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;line-height:0;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center flex-shrink-0" id="count-pending">0</span>
                     </div>
                     <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-pending"></div>
                 </div>
 
                 <!-- Kolom: Siap Disajikan -->
                 <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center">
-                        <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide">Siap Disajikan</h3>
-                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center" id="count-preparing">0</span>
+                    <div class="p-4 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide truncate">Siap Disajikan</h3>
+                            <div class="flex items-center gap-1 flex-shrink-0" title="Buka / ciutkan semua kartu di kolom ini">
+                                <button type="button" class="js-col-expand-all" data-col="#col-preparing" title="Buka semua" aria-label="Buka semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;line-height:0;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <button type="button" class="js-col-minimize-all" data-col="#col-preparing" title="Ciutkan semua" aria-label="Ciutkan semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;line-height:0;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center flex-shrink-0" id="count-preparing">0</span>
                     </div>
                     <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-preparing"></div>
                 </div>
 
                 <!-- Kolom: Tamu Sudah Pulang -->
                 <div class="w-80 flex-shrink-0 flex flex-col h-full bg-gray-50 rounded-xl shadow-sm" style="border:1px solid #fecaca;">
-                    <div class="p-4 rounded-t-xl flex justify-between items-center" style="border-bottom:1px solid #fecaca;background:#fef2f2;">
-                        <div>
-                            <h3 class="font-bold text-sm uppercase tracking-wide text-red-700">Tamu Sudah Pulang</h3>
-                            <p class="text-xs mt-0.5" style="color:#f87171;">Lepas kursi agar bisa dipakai reservasi baru</p>
+                    <div class="p-4 rounded-t-xl flex justify-between items-start gap-2" style="border-bottom:1px solid #fecaca;background:#fef2f2;">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="font-bold text-sm uppercase tracking-wide text-red-700">Tamu Sudah Pulang</h3>
+                                <div class="flex items-center gap-1 flex-shrink-0" title="Buka / ciutkan semua kartu di kolom ini">
+                                    <button type="button" class="js-col-expand-all" data-col="#col-served" title="Buka semua" aria-label="Buka semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #fca5a5;border-radius:6px;background:#fff;color:#991b1b;cursor:pointer;line-height:0;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                    <button type="button" class="js-col-minimize-all" data-col="#col-served" title="Ciutkan semua" aria-label="Ciutkan semua kartu di kolom ini" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #fca5a5;border-radius:6px;background:#fff;color:#991b1b;cursor:pointer;line-height:0;">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+            
                         </div>
-                        <span class="text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center bg-red-100 text-red-600" id="count-served">0</span>
+                        <span class="text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center bg-red-100 text-red-600 flex-shrink-0" id="count-served">0</span>
                     </div>
                     <div class="kanban-col flex-1 overflow-y-auto m-2" id="col-served"></div>
                 </div>
@@ -247,6 +312,8 @@
         </div>
     </div>
 
+    {% include 'admin/operations_edit_order_modal.html' %}
+
     <script>
         let orderIndex = {};
         let floorPlanTables = [];
@@ -254,6 +321,10 @@
         let tableStateMap = {};
         let seatModalOrderId = '';
         let autoConfirmPaymentOrderId = '';
+        let editModalOrderId = '';
+        let editOrderMenusData = [];
+        let editModalLegacyItems = [];
+        let minimizedOrderCardPkeys = new Set();
 
         function parseArrivalDate(value) {
             if (!value) return null;
@@ -310,12 +381,6 @@
             return rec.table_id || '-';
         }
 
-        function toIdLabelFlow(v) {
-            if (v === 'Dine-In') return 'Dine-In';
-            if (v === 'Takeaway') return 'Takeaway';
-            return v || '-';
-        }
-
         function toIdLabelPayment(v) {
             if (v === 'Paid') return 'Lunas';
             if (v === 'Unpaid') return 'Belum Bayar';
@@ -328,10 +393,371 @@
             return v || '-';
         }
 
+        function isoToDatetimeLocalWallJakarta(value) {
+            const arrival = parseArrivalDate(value);
+            if (!arrival) return '';
+            const fmt = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Jakarta',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            });
+            const parts = {};
+            fmt.formatToParts(arrival).forEach(function(p) {
+                if (p.type !== 'literal') {
+                    parts[p.type] = p.value;
+                }
+            });
+            let h = parts.hour;
+            if (h.length === 1) {
+                h = '0' + h;
+            }
+            return parts.year + '-' + parts.month + '-' + parts.day + 'T' + h + ':' + parts.minute;
+        }
+
+        function wallJakartaLocalToIso(localVal) {
+            if (!localVal || !String(localVal).trim()) {
+                return '';
+            }
+            const s = String(localVal).trim();
+            const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+            if (!m) {
+                return s;
+            }
+            return m[1] + 'T' + m[2] + ':' + m[3] + ':00+07:00';
+        }
+
+        function escapeHtmlAttr(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;');
+        }
+
+        function loadEditOrderMenus(done) {
+            $.get('/admin/api/menus/for-order', function(res) {
+                editOrderMenusData = (res.ok && res.data) ? res.data : [];
+                if (typeof done === 'function') {
+                    done();
+                }
+            }).fail(function() {
+                editOrderMenusData = [];
+                if (typeof done === 'function') {
+                    done();
+                }
+            });
+        }
+
+        function renderLegacyBlock() {
+            const $wrap = $('#edit-order-legacy-wrap');
+            const $list = $('#edit-order-legacy-list').empty();
+            if (!editModalLegacyItems.length) {
+                $wrap.hide();
+                return;
+            }
+            $wrap.show();
+            editModalLegacyItems.forEach(function(it) {
+                const q = parseInt(it.quantity, 10) || 0;
+                const $line = $('<div/>').css({ marginBottom: '4px' });
+                $line.text(q + '× ' + (it.name || '-'));
+                $list.append($line);
+            });
+        }
+
+        function editOrderUpdateQty(btn, delta) {
+            const $card = $(btn).closest('.edit-menu-item-card');
+            const $span = $card.find('.edit-menu-qty');
+            let qty = parseInt($span.text(), 10) || 0;
+            qty += delta;
+            if (qty < 0) {
+                qty = 0;
+            }
+            if (qty > 999) {
+                qty = 999;
+            }
+            $span.text(String(qty));
+            if (qty > 0) {
+                $card.css({ borderColor: '#033187', boxShadow: '0 0 0 1px #033187' });
+            } else {
+                $card.css({ borderColor: '#e5e7eb', boxShadow: 'none' });
+            }
+            calculateEditOrderTotal();
+        }
+
+        function calculateEditOrderTotal() {
+            let total = 0;
+            $('#edit-order-menu-grid .edit-menu-item-card').each(function() {
+                const qty = parseInt($(this).find('.edit-menu-qty').text(), 10) || 0;
+                const price = parseInt($(this).data('price'), 10) || 0;
+                total += qty * price;
+            });
+            (editModalLegacyItems || []).forEach(function(it) {
+                const q = parseInt(it.quantity, 10) || 0;
+                const p = parseFloat(it.price);
+                if (!isNaN(p)) {
+                    total += q * p;
+                }
+            });
+            $('#edit-total-amount').val(total);
+        }
+
+        function renderEditOrderMenuGrid(order) {
+            const $grid = $('#edit-order-menu-grid').empty();
+            $('#edit-order-menu-empty').hide();
+            const orderQtyById = {};
+            (order.items || []).forEach(function(it) {
+                const id = String(it.item_id || '').trim();
+                if (!id) {
+                    return;
+                }
+                const q = parseInt(it.quantity, 10) || 0;
+                orderQtyById[id] = (orderQtyById[id] || 0) + q;
+            });
+            const menus = editOrderMenusData || [];
+            if (!menus.length) {
+                $('#edit-order-menu-empty').show();
+                return;
+            }
+            menus.forEach(function(m) {
+                const id = String(m.menu_id || '').trim();
+                if (!id) {
+                    return;
+                }
+                const name = m.name || '';
+                const price = parseInt(m.price, 10) || 0;
+                const cat = m.category || 'Menu';
+                const qtyStart = Math.min(999, Math.max(0, orderQtyById[id] || 0));
+
+                const $card = $('<div class="edit-menu-item-card"></div>').css({
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '10px',
+                    padding: '10px',
+                    background: '#fff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '72px'
+                }).attr('data-id', id).attr('data-price', price).attr('data-name', name);
+
+                if (qtyStart > 0) {
+                    $card.css({ borderColor: '#033187', boxShadow: '0 0 0 1px #033187' });
+                }
+
+                const $top = $('<div/>');
+                const $cat = $('<span/>').text(cat).css({
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    color: '#033187',
+                    background: '#eff6ff',
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    display: 'inline-block',
+                    marginBottom: '6px'
+                });
+                const $title = $('<h4/>').text(name).css({
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    color: '#1f2937',
+                    margin: '0 0 4px'
+                });
+                const $priceEl = $('<p/>').text('Rp ' + price.toLocaleString('id-ID')).css({
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    margin: '0'
+                });
+                $top.append($cat, $title, $priceEl);
+
+                const $bot = $('<div/>').css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTop: '1px solid #f3f4f6',
+                    paddingTop: '8px',
+                    marginTop: '8px'
+                });
+                const $lbl = $('<span/>').text('Jumlah').css({ fontSize: '10px', color: '#9ca3af' });
+                const $qtyBox = $('<div/>').css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#f9fafb',
+                    borderRadius: '999px',
+                    padding: '2px',
+                    border: '1px solid #e5e7eb'
+                });
+                const $m = $('<button type="button"/>').text('−').css({
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: '#fff',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    lineHeight: '1'
+                });
+                const $sp = $('<span class="edit-menu-qty"/>').text(String(qtyStart)).css({
+                    fontWeight: '700',
+                    color: '#033187',
+                    minWidth: '22px',
+                    textAlign: 'center',
+                    fontSize: '13px'
+                });
+                const $p = $('<button type="button"/>').text('+').css({
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: '#033187',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    lineHeight: '1'
+                });
+                $m.on('click', function(e) {
+                    e.preventDefault();
+                    editOrderUpdateQty(this, -1);
+                });
+                $p.on('click', function(e) {
+                    e.preventDefault();
+                    editOrderUpdateQty(this, 1);
+                });
+                $qtyBox.append($m, $sp, $p);
+                $bot.append($lbl, $qtyBox);
+                $card.append($top, $bot);
+                $grid.append($card);
+            });
+        }
+
+        function collectEditOrderItems() {
+            const fromGrid = [];
+            const gridIds = new Set();
+            $('#edit-order-menu-grid .edit-menu-item-card').each(function() {
+                const $c = $(this);
+                const qty = parseInt($c.find('.edit-menu-qty').text(), 10) || 0;
+                if (qty <= 0) {
+                    return;
+                }
+                const id = String($c.data('id') || '').trim();
+                const name = String($c.data('name') || '').trim() || '-';
+                const price = parseInt($c.data('price'), 10) || 0;
+                const row = { item_id: id, name: name, quantity: qty, price: price };
+                fromGrid.push(row);
+                if (id) {
+                    gridIds.add(id);
+                }
+            });
+            const preserved = (editModalLegacyItems || []).filter(function(it) {
+                const id = String(it.item_id || '').trim();
+                if (!id) {
+                    return true;
+                }
+                return !gridIds.has(id);
+            }).map(function(it) {
+                const row = {
+                    name: String(it.name || '').trim().slice(0, 200) || '-',
+                    quantity: Math.max(1, Math.min(999, parseInt(it.quantity, 10) || 1))
+                };
+                const id = String(it.item_id || '').trim();
+                if (id) {
+                    row.item_id = id;
+                }
+                if (it.price != null && String(it.price).trim() !== '' && !isNaN(parseFloat(it.price))) {
+                    row.price = Math.max(0, parseFloat(it.price));
+                }
+                return row;
+            });
+            return preserved.concat(fromGrid);
+        }
+
+        function openEditOrderModal(orderId) {
+            const order = orderIndex[orderId];
+            if (!order) {
+                alert('Data pesanan tidak ditemukan. Muat ulang halaman.');
+                return;
+            }
+            editModalOrderId = orderId;
+            $('#edit-order-ref').text('#' + (order.pkey.split('-').pop() || order.pkey));
+            $('#edit-contact-name').val((order.contact && order.contact.name) ? order.contact.name : '');
+            $('#edit-contact-wa').val((order.contact && order.contact.whatsapp) ? order.contact.whatsapp : '');
+            $('#edit-arrival-time').val(isoToDatetimeLocalWallJakarta(order.arrival_time || ''));
+            $('#edit-party-size').val(order.party_size ? Number(order.party_size) : 1);
+            $('#edit-seating-notes').val(order.seating_notes || '');
+            const st = order.service_timing || 'Serve on Arrival';
+            $('#edit-service-timing').val(st === 'Ready after Arrival' ? 'Ready after Arrival' : 'Serve on Arrival');
+
+            loadEditOrderMenus(function() {
+                const menuIds = new Set((editOrderMenusData || []).map(function(m) {
+                    return String(m.menu_id || '').trim();
+                }));
+                editModalLegacyItems = [];
+                (order.items || []).forEach(function(it) {
+                    const id = String(it.item_id || '').trim();
+                    if (!id || !menuIds.has(id)) {
+                        editModalLegacyItems.push($.extend({}, it));
+                    }
+                });
+                renderLegacyBlock();
+                renderEditOrderMenuGrid(order);
+                calculateEditOrderTotal();
+                $('#edit-order-error').hide().text('');
+                $('#edit-order-modal').css('display', 'flex');
+            });
+        }
+
+        function closeEditOrderModal() {
+            editModalOrderId = '';
+            editModalLegacyItems = [];
+            $('#edit-order-menu-grid').empty();
+            $('#edit-order-legacy-wrap').hide();
+            $('#edit-order-menu-empty').hide();
+            $('#edit-order-modal').hide();
+            $('#edit-order-error').hide().text('');
+            $('#edit-order-save-btn').prop('disabled', false).text('Simpan');
+        }
+
+        function submitEditOrder() {
+            if (!editModalOrderId) return;
+            $('#edit-order-error').hide().text('');
+            $('#edit-order-save-btn').prop('disabled', true).text('Menyimpan...');
+            const payload = {
+                order_id: editModalOrderId,
+                contact: {
+                    name: $('#edit-contact-name').val(),
+                    whatsapp: $('#edit-contact-wa').val()
+                },
+                arrival_time: wallJakartaLocalToIso($('#edit-arrival-time').val()),
+                party_size: parseInt($('#edit-party-size').val(), 10) || 1,
+                seating_notes: $('#edit-seating-notes').val(),
+                service_timing: $('#edit-service-timing').val(),
+                total_amount: parseFloat($('#edit-total-amount').val()) || 0,
+                items: collectEditOrderItems()
+            };
+            $.ajax({
+                url: '/admin/api/order/update',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(res) {
+                    if (res.ok) {
+                        closeEditOrderModal();
+                        fetchOrders();
+                        fetchReservedTables();
+                    } else {
+                        $('#edit-order-error').show().text(res.msg || 'Gagal menyimpan.');
+                        $('#edit-order-save-btn').prop('disabled', false).text('Simpan');
+                    }
+                },
+                error: function() {
+                    $('#edit-order-error').show().text('Terjadi kesalahan server.');
+                    $('#edit-order-save-btn').prop('disabled', false).text('Simpan');
+                }
+            });
+        }
+
         function applySidebarState(isOpen) {
             const sidebar = document.getElementById('admin-sidebar');
             const btn = document.getElementById('toggle-sidebar-btn');
-            const label = document.getElementById('toggle-sidebar-label');
             const iconOpen = document.getElementById('toggle-sidebar-icon-open');
             const iconHide = document.getElementById('toggle-sidebar-icon-hide');
             const backdrop = document.getElementById('sidebar-backdrop');
@@ -350,15 +776,15 @@
             }
 
             if (isOpen) {
-                if (label) label.textContent = 'Hide Sidebar';
                 if (iconOpen) iconOpen.classList.add('hidden');
                 if (iconHide) iconHide.classList.remove('hidden');
-                btn.setAttribute('title', 'Hide Sidebar');
+                btn.setAttribute('title', 'Sembunyikan panel samping');
+                btn.setAttribute('aria-label', 'Sembunyikan panel samping');
             } else {
-                if (label) label.textContent = 'Open Sidebar';
                 if (iconHide) iconHide.classList.add('hidden');
                 if (iconOpen) iconOpen.classList.remove('hidden');
-                btn.setAttribute('title', 'Open Sidebar');
+                btn.setAttribute('title', 'Tampilkan panel samping');
+                btn.setAttribute('aria-label', 'Tampilkan panel samping');
             }
         }
 
@@ -385,21 +811,46 @@
             orderIndex = {};
 
             let counts = { unpaid: 0, pending: 0, preparing: 0, served: 0 };
+            const renderedPkeys = new Set();
 
             orders.forEach(order => {
+                if (order.fulfillment_status === 'Cancelled' || order.payment_status === 'Cancelled') {
+                    return;
+                }
                 orderIndex[order.pkey] = order;
-                let badgeClass = 'badge-reservation';
                 let cardClass = 'reservation';
-                if(order.flow_type === 'Takeaway') { badgeClass = 'badge-takeaway'; cardClass = 'takeaway'; }
-                if(order.flow_type === 'Dine-In') { badgeClass = 'badge-dinein'; cardClass = 'dinein'; }
+                if (order.flow_type === 'Takeaway') { cardClass = 'takeaway'; }
+                if (order.flow_type === 'Dine-In') { cardClass = 'dinein'; }
 
+                const guestNameEsc = $('<div/>').text(order.contact && order.contact.name ? order.contact.name : 'Tamu').html();
+                const flowLabelRaw = order.flow_type === 'Dine-In' ? 'Dine-In' : (order.flow_type === 'Takeaway' ? 'Takeaway' : (order.flow_type || '-'));
+                const flowLabelEsc = $('<div/>').text(flowLabelRaw).html();
+                let flowTagClass = 'order-card-flow-tag--reservation';
+                if (order.flow_type === 'Dine-In') {
+                    flowTagClass = 'order-card-flow-tag--dinein';
+                } else if (order.flow_type === 'Takeaway') {
+                    flowTagClass = 'order-card-flow-tag--takeaway';
+                }
                 let itemsHtml = '';
+                let itemsCompactHtml = '';
                 if(order.items && order.items.length > 0) {
                     itemsHtml = '<div class="mt-3 text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">';
                     order.items.forEach(i => {
-                        itemsHtml += `<div class="mb-1 last:mb-0"><b class="text-gray-800">${i.quantity}x</b> ${i.name}</div>`;
+                        const nameEsc = $('<div/>').text(i.name || '').html();
+                        const qty = Number(i.quantity) || 1;
+                        itemsHtml += `<div class="mb-1 last:mb-0"><b class="text-gray-800">${qty}x</b> ${nameEsc}</div>`;
                     });
                     itemsHtml += '</div>';
+                    itemsCompactHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;display:flex;flex-wrap:nowrap;align-items:baseline;gap:0;font-size:11px;line-height:1.35;overflow-x:auto;-webkit-overflow-scrolling:touch;">';
+                    order.items.forEach((i, idx) => {
+                        const nameEsc = $('<div/>').text(i.name || '').html();
+                        const qty = Number(i.quantity) || 1;
+                        if (idx > 0) {
+                            itemsCompactHtml += '<span style="color:#d1d5db;flex-shrink:0;padding:0 5px;">·</span>';
+                        }
+                        itemsCompactHtml += `<span style="flex-shrink:0;white-space:nowrap;color:#4b5563;"><strong style="color:#374151;">${qty}x</strong> ${nameEsc}</span>`;
+                    });
+                    itemsCompactHtml += '</div>';
                 }
 
                 let contactHtml = '';
@@ -425,7 +876,8 @@
                 if(order.payment_status !== 'Paid') {
                     counts.unpaid++;
                     targetCol = '#col-unpaid';
-                    actionHtml = btn('#033187','#fff','10px',`updateStatus('${order.pkey}','payment','Paid')`,'Konfirmasi Pembayaran');
+                    actionHtml = btn('#033187','#fff','10px',`updateStatus('${order.pkey}','payment','Paid')`,'Konfirmasi Pembayaran') +
+                        btn('#dc2626','#fff','6px',`cancelOrder('${order.pkey}')`,`<svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg> Batalkan Reservasi`);
                 } else if(order.fulfillment_status === 'Pending') {
                     counts.pending++;
                     targetCol = '#col-pending';
@@ -457,6 +909,8 @@
 
                 if(targetCol === '') return;
 
+                renderedPkeys.add(order.pkey);
+
                 // Table display: support multi-table
                 const isFreeSeat = (order.seat_mode === 'free') || (
                     order.flow_type === 'Dine-In' &&
@@ -476,17 +930,38 @@
                 const arrivalLabel = formatArrivalLabel(order.arrival_time || '');
                 const countdownLabel = countdownToArrival(order.arrival_time || '');
                 const countdownColor = countdownLabel === '-' ? '#6b7280' : (countdownLabel === 'customer sampai' ? '#033187' : '#0f766e');
+                const totalRp = (Number(order.total_amount) || 0).toLocaleString('id-ID');
+                const isMin = minimizedOrderCardPkeys.has(order.pkey);
+                const minimizedClass = isMin ? ' order-card--minimized' : '';
+
+                const editOrderBtn = `<button type="button" class="js-edit-order-btn" data-order-pkey="${escapeHtmlAttr(order.pkey)}" style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:#fff;color:#033187;font-size:12px;font-weight:700;padding:8px 10px;border-radius:8px;border:1px solid #033187;cursor:pointer;">Edit transaksi</button>`;
 
                 const cardHtml = `
-                    <div class="order-card ${cardClass}" id="card-${order.pkey}">
-                        <div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f3f4f6;">
-                            <div style="font-size:11px;font-weight:700;color:#6b7280;">#${order.pkey.split('-').pop()}</div>
-                            <div style="margin-top:6px;">
-                                <span class="badge ${badgeClass}">${toIdLabelFlow(order.flow_type)}</span>
+                    <div class="order-card ${cardClass}${minimizedClass}" data-order-pkey="${escapeHtmlAttr(order.pkey)}">
+                        <div class="order-card-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f3f4f6;">
+                            <div style="font-weight:700;color:#1f2937;font-size:15px;line-height:1.25;flex:1;min-width:0;padding-right:4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;">
+                                <span>${guestNameEsc}</span>
+                                <span class="order-card-flow-tag ${flowTagClass}">${flowLabelEsc}</span>
                             </div>
+                            <button type="button" class="js-toggle-card-expand" data-order-pkey="${escapeHtmlAttr(order.pkey)}" title="Ciutkan / lebarkan kartu" aria-label="Ciutkan atau lebarkan detail kartu" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:34px;height:34px;color:#033187;background:#eff6ff;border:1px solid #bfdbfe;padding:0;border-radius:8px;cursor:pointer;line-height:0;">
+                                <span class="order-card-toggle-icon order-card-toggle-icon--collapse" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span>
+                                <span class="order-card-toggle-icon order-card-toggle-icon--expand" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></span>
+                            </button>
                         </div>
-                        <div style="font-weight:700;color:#1f2937;font-size:15px;">${order.contact?.name || 'Tamu'}</div>
-                        <div style="font-size:11px;color:#6b7280;margin:6px 0 10px;display:flex;flex-direction:column;gap:4px;">
+                        <div class="order-card-compact" style="font-size:12px;color:#6b7280;">
+                            <div style="margin-bottom:8px;line-height:1.35;">
+                                <strong style="color:${payColor};font-size:14px;">${toIdLabelPayment(order.payment_status)}</strong>
+                                <strong style="color:#033187;font-size:14px;margin-left:6px;">Rp ${totalRp}</strong>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;line-height:1.4;">
+                                <span style="color:#1f2937;font-weight:600;">${arrivalLabel}</span>
+                                <span style="color:#d1d5db;">·</span>
+                                <span style="color:${countdownColor};font-weight:700;">${countdownLabel}</span>
+                            </div>
+                            ${itemsCompactHtml}
+                        </div>
+                        <div class="order-card-full">
+                        <div style="font-size:11px;color:#6b7280;margin:0 0 10px;display:flex;flex-direction:column;gap:4px;">
                             <span style="display:flex;justify-content:space-between;align-items:center;"><span>Meja:</span><span style="display:flex;gap:4px;">${tableDisplay}</span></span>
                             ${isFreeSeat ? `<span style="display:flex;justify-content:space-between;"><span>Catatan Kursi:</span><span style="color:#1f2937;">${order.seating_notes || '-'}</span></span>` : ''}
                             ${order.party_size ? `<span style="display:flex;justify-content:space-between;"><span>Jumlah Tamu:</span><strong style="color:#1f2937;">${order.party_size} orang</strong></span>` : ''}
@@ -496,17 +971,25 @@
                         </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;background:#f9fafb;padding:8px;border-radius:8px;border:1px solid #f3f4f6;margin-bottom:8px;">
                             <span style="color:#6b7280;">Pembayaran: <strong style="color:${payColor};">${toIdLabelPayment(order.payment_status)}</strong></span>
-                            <span style="font-weight:700;color:#033187;">Rp ${order.total_amount.toLocaleString('id-ID')}</span>
+                            <span style="font-weight:700;color:#033187;">Rp ${totalRp}</span>
                         </div>
                         ${itemsHtml}
                         <div style="display:flex;flex-direction:column;gap:4px;">
+                            ${editOrderBtn}
                             ${contactHtml}
                             ${actionHtml}
+                        </div>
                         </div>
                     </div>
                 `;
                 $(targetCol).append(cardHtml);
             });
+
+            for (const pk of Array.from(minimizedOrderCardPkeys)) {
+                if (!renderedPkeys.has(pk)) {
+                    minimizedOrderCardPkeys.delete(pk);
+                }
+            }
 
             $('#count-unpaid').text(counts.unpaid);
             $('#count-pending').text(counts.pending);
@@ -646,42 +1129,6 @@
             });
         }
 
-        function releaseTable(orderId) {
-            if(!confirm('Konfirmasi tamu sudah pulang? Ini akan melepas meja agar bisa dipakai reservasi baru.')) return;
-            $.ajax({
-                url: '/admin/api/order/release',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ order_id: orderId }),
-                success: function(res) {
-                    if(res.ok) {
-                        fetchOrders();
-                    } else {
-                        alert('Gagal melepas meja: ' + (res.msg || 'Terjadi kesalahan'));
-                    }
-                }
-            });
-        }
-
-        function resetAllTables() {
-            if(!confirm('⚠️ Kosongkan SEMUA kursi?\n\nIni akan menandai semua meja menjadi Available tanpa melihat status pesanan. Gunakan hanya jika semua tamu sudah pulang.')) return;
-            if(!confirm('Apakah Anda benar-benar yakin? Tindakan ini tidak bisa dibatalkan.')) return;
-            $.ajax({
-                url: '/admin/api/tables/reset',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({}),
-                success: function(res) {
-                    if(res.ok) {
-                        alert('✅ Semua kursi berhasil dikosongkan! ' + (res.modified || 0) + ' meja direset ke Available.');
-                        fetchOrders();
-                    } else {
-                        alert('Error: ' + (res.msg || 'Terjadi kesalahan'));
-                    }
-                }
-            });
-        }
-
         function fetchReservedTables() {
             $.get('/admin/api/tables/reserved', function(res) {
                 const bar   = document.getElementById('reserved-tables-bar');
@@ -689,8 +1136,8 @@
                 reservedByOrder = {};
                 tableStateMap = {};
                 if(!res.ok || !res.data || res.data.length === 0) {
-                    bar.style.display = 'none';
-                    chips.innerHTML = '';
+                    bar.style.display = 'block';
+                    chips.innerHTML = '<span style="font-size:12px;color:#78716c;font-weight:600;">semua kursi kosong/tidak terservasi</span>';
                     return;
                 }
                 res.data.forEach(t => {
@@ -751,6 +1198,27 @@
             });
         }
 
+        function cancelOrder(orderId) {
+            if(!confirm('Batalkan reservasi ini?\n\nSemua meja yang sudah dipesan akan dilepas dan pesanan ditandai Cancelled.')) return;
+            $.ajax({
+                url: '/admin/api/order/cancel',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ order_id: orderId }),
+                success: function(res) {
+                    if(res.ok) {
+                        fetchReservedTables();
+                        fetchOrders();
+                    } else {
+                        alert('Gagal membatalkan: ' + (res.msg || 'Terjadi kesalahan'));
+                    }
+                },
+                error: function() {
+                    alert('Terjadi kesalahan server.');
+                }
+            });
+        }
+
         function resetAllTables() {
             if(!confirm('⚠️ Kosongkan SEMUA kursi?\n\nIni akan menandai semua meja Available tanpa melihat status pesanan.')) return;
             if(!confirm('Apakah Anda benar-benar yakin? Tindakan ini tidak bisa dibatalkan.')) return;
@@ -771,8 +1239,64 @@
             });
         }
 
+        function setColumnCardsMinimized(colSelector, minimized) {
+            const $col = $(colSelector);
+            if (!$col.length) {
+                return;
+            }
+            $col.find('.order-card').each(function() {
+                const pk = $(this).attr('data-order-pkey');
+                if (!pk) {
+                    return;
+                }
+                if (minimized) {
+                    minimizedOrderCardPkeys.add(pk);
+                    $(this).addClass('order-card--minimized');
+                } else {
+                    minimizedOrderCardPkeys.delete(pk);
+                    $(this).removeClass('order-card--minimized');
+                }
+            });
+        }
+
         $(document).ready(function() {
             initSidebarState();
+            $(document).on('click', '.js-edit-order-btn', function(e) {
+                e.preventDefault();
+                const orderId = $(this).attr('data-order-pkey');
+                if (orderId) {
+                    openEditOrderModal(orderId);
+                }
+            });
+            $(document).on('click', '.js-toggle-card-expand', function(e) {
+                e.preventDefault();
+                const pk = $(this).attr('data-order-pkey');
+                if (!pk) {
+                    return;
+                }
+                const $card = $(this).closest('.order-card');
+                if ($card.hasClass('order-card--minimized')) {
+                    $card.removeClass('order-card--minimized');
+                    minimizedOrderCardPkeys.delete(pk);
+                } else {
+                    $card.addClass('order-card--minimized');
+                    minimizedOrderCardPkeys.add(pk);
+                }
+            });
+            $(document).on('click', '.js-col-expand-all', function(e) {
+                e.preventDefault();
+                const col = $(this).attr('data-col');
+                if (col) {
+                    setColumnCardsMinimized(col, false);
+                }
+            });
+            $(document).on('click', '.js-col-minimize-all', function(e) {
+                e.preventDefault();
+                const col = $(this).attr('data-col');
+                if (col) {
+                    setColumnCardsMinimized(col, true);
+                }
+            });
             window.addEventListener('resize', function() {
                 initSidebarState();
             });

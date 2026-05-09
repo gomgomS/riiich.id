@@ -160,6 +160,18 @@ def api_get_orders():
         print(traceback.format_exc())
         return jsonify({"ok": False, "msg": "Server error"}), 500
 
+@admin_blueprint.route("/admin/api/menus/for-order", methods=["GET"])
+def api_menus_for_order():
+    """Same menu catalog as customer reservation (available items only)."""
+    try:
+        if not _is_logged_in():
+            return jsonify({"ok": False, "msg": "Unauthorized"}), 401
+        result = admin_proc.get_available_menus()
+        return jsonify(result)
+    except Exception:
+        print(traceback.format_exc())
+        return jsonify({"ok": False, "msg": "Server error"}), 500
+
 @admin_blueprint.route("/admin/api/order/status", methods=["POST"])
 def api_update_order_status():
     try:
@@ -203,6 +215,24 @@ def api_reassign_order_tables():
         order_id = payload.get("order_id")
         table_ids = payload.get("table_ids", [])
         result = admin_proc.reassign_order_tables(order_id, table_ids)
+        return jsonify(result)
+    except Exception:
+        print(traceback.format_exc())
+        return jsonify({"ok": False, "msg": "Server error"}), 500
+
+@admin_blueprint.route("/admin/api/order/update", methods=["POST"])
+def api_update_order_transaction():
+    try:
+        if not _is_logged_in():
+            return jsonify({"ok": False, "msg": "Unauthorized"}), 401
+
+        payload = request.get_json() or {}
+        order_id = payload.get("order_id", "")
+        if not order_id:
+            return jsonify({"ok": False, "msg": "order_id required"}), 400
+
+        body = {k: v for k, v in payload.items() if k != "order_id"}
+        result = admin_proc.update_order_transaction(order_id, body)
         return jsonify(result)
     except Exception:
         print(traceback.format_exc())
@@ -258,6 +288,22 @@ def api_set_table_status():
         table_id = payload.get("table_id", "")
         new_status = payload.get("status", "")
         result = admin_proc.set_table_status(table_id, new_status)
+        return jsonify(result)
+    except Exception:
+        print(traceback.format_exc())
+        return jsonify({"ok": False, "msg": "Server error"}), 500
+
+@admin_blueprint.route("/admin/api/order/cancel", methods=["POST"])
+def api_cancel_order():
+    """Cancel an order — sets status to Cancelled and frees all reserved tables."""
+    try:
+        if not _is_logged_in():
+            return jsonify({"ok": False, "msg": "Unauthorized"}), 401
+        payload = request.get_json()
+        order_id = payload.get("order_id", "")
+        if not order_id:
+            return jsonify({"ok": False, "msg": "order_id required"}), 400
+        result = admin_proc.cancel_order(order_id)
         return jsonify(result)
     except Exception:
         print(traceback.format_exc())
