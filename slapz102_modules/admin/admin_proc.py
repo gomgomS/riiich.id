@@ -17,6 +17,29 @@ def _get_db():
     return client[config.mainDB]
 # end def
 
+def _seat_display_name(db, table_id):
+    """Label tamu untuk meja: table_name / label dari db_table, lalu denah, fallback id."""
+    tid = str(table_id or "").strip()
+    if not tid:
+        return ""
+    try:
+        rec = db["db_table"].find_one({"table_id": tid})
+        if rec:
+            nm = (str(rec.get("table_name") or "")).strip() or (str(rec.get("label") or "")).strip()
+            if nm:
+                return nm
+        plan = db["db_floor_plan"].find_one({"plan_name": "main_floor"})
+        elements = (plan or {}).get("elements") or {}
+        for t in (elements.get("tables") or []):
+            if str(t.get("id") or "").strip() != tid:
+                continue
+            nm = (str(t.get("table_name") or "")).strip() or (str(t.get("label") or "")).strip()
+            return nm if nm else tid
+    except Exception:
+        pass
+    return tid
+# end def
+
 def _hash_password(password):
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 # end def
@@ -309,22 +332,23 @@ def release_table_by_id(table_id):
         remaining_tables = []
 
         if order_pkey:
-            # 2. Remove this table from the order's table_ids array atomically
-            db["db_order"].update_one(
-                {"pkey": order_pkey},
-                {"$pull": {"table_ids": table_id}}
-            )
-
-            # 3. Re-fetch order; align legacy table_id with remaining seats (no fulfillment change)
             order = db["db_order"].find_one({"pkey": order_pkey})
             if order:
-                remaining_ids = [str(x).strip() for x in (order.get("table_ids") or []) if str(x).strip()]
-                legacy_tid = remaining_ids[0] if remaining_ids else ""
+                tid = str(table_id).strip()
+                ids = [str(x).strip() for x in (order.get("table_ids") or []) if str(x).strip()]
+                if not ids and order.get("table_id"):
+                    leg = str(order.get("table_id") or "").strip()
+                    if leg:
+                        ids = [leg]
+                ids = [x for x in ids if x != tid]
+                legacy_tid = ids[0] if ids else ""
                 db["db_order"].update_one(
                     {"pkey": order_pkey},
-                    {"$set": {"table_id": legacy_tid}}
+                    {"$set": {"table_ids": ids, "table_id": legacy_tid}}
                 )
-                remaining_tables = remaining_ids
+                remaining_tables = ids
+            # end if
+        # end if
 
         return {
             "ok":               True,
@@ -349,6 +373,10 @@ def update_order_status(order_id, update_type, new_status):
             table_ids = order.get("table_ids", [])
             if not table_ids and order.get("table_id"):
                 table_ids = [order["table_id"]]
+            table_ids = [str(x).strip() for x in table_ids if str(x).strip()]
+
+            flow_type = str(order.get("flow_type") or "")
+            is_dine_in = flow_type == "Dine-In"
 
             locked_ids = []
             for tid in table_ids:
@@ -356,13 +384,20 @@ def update_order_status(order_id, update_type, new_status):
                     {"table_id": tid, "status": "Available"},
                     {"$set": {"status": "Reserved", "order_pkey": order_id, "reserved_at": int(time.time() * 1000)}}
                 )
+                # Dine-In: tamu sudah di meja — izinkan mengikat kursi meski status belum Available (mis. masih Occupied/Reserved dari state sebelumnya)
+                if not locked and is_dine_in:
+                    locked = db["db_table"].find_one_and_update(
+                        {"table_id": tid},
+                        {"$set": {"status": "Reserved", "order_pkey": order_id, "reserved_at": int(time.time() * 1000)}}
+                    )
                 if not locked:
                     if locked_ids:
                         db["db_table"].update_many(
                             {"table_id": {"$in": locked_ids}},
                             {"$set": {"status": "Available", "order_pkey": "", "reserved_at": 0}}
                         )
-                    return {"ok": False, "msg": f"Seat {tid} is no longer available. Please refresh and choose another seat."}
+                    seat_nm = _seat_display_name(db, tid)
+                    return {"ok": False, "msg": f'Meja "{seat_nm}" tidak tersedia. Segarkan halaman lalu pilih kursi lain.'}
                 locked_ids.append(tid)
             # end for
 
@@ -459,6 +494,8 @@ def reassign_order_tables(order_id, new_table_ids):
             old_ids = [order.get("table_id")]
 
         payment_paid = order.get("payment_status") == "Paid"
+        flow_type = str(order.get("flow_type") or "")
+        is_dine_in = flow_type == "Dine-In"
 
         if payment_paid:
             to_add = [tid for tid in cleaned if tid not in old_ids]
@@ -476,13 +513,19 @@ def reassign_order_tables(order_id, new_table_ids):
                     },
                     {"$set": {"status": "Reserved", "order_pkey": order_id, "reserved_at": int(time.time() * 1000)}}
                 )
+                if not locked and is_dine_in:
+                    locked = db["db_table"].find_one_and_update(
+                        {"table_id": tid},
+                        {"$set": {"status": "Reserved", "order_pkey": order_id, "reserved_at": int(time.time() * 1000)}}
+                    )
                 if not locked:
                     if locked_ids:
                         db["db_table"].update_many(
                             {"table_id": {"$in": locked_ids}},
                             {"$set": {"status": "Available", "order_pkey": "", "reserved_at": 0}}
                         )
-                    return {"ok": False, "msg": f"Seat {tid} is not available."}
+                    seat_nm = _seat_display_name(db, tid)
+                    return {"ok": False, "msg": f'Meja "{seat_nm}" tidak tersedia.'}
                 locked_ids.append(tid)
 
             if to_remove:

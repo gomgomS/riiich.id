@@ -626,7 +626,7 @@
                     ? ('<div style="font-size:10px;color:#6b7280;margin-top:4px;">Order <code style="font-size:10px;background:#f3f4f6;padding:2px 6px;border-radius:4px;">' + escapeHtml(orderPk.length > 18 ? orderPk.slice(0, 18) + '…' : orderPk) + '</code></div>')
                     : '';
                 const lep = showLepas
-                    ? ('<button type="button" class="reserved-table-chip__btn" style="padding:6px 10px;font-size:11px;width:auto;min-width:72px;flex-shrink:0;" onclick="releaseSingleTable(' + JSON.stringify(id) + ', ' + JSON.stringify(name) + ')">Lepas</button>')
+                    ? ('<button type="button" class="reserved-table-chip__btn js-seat-panel-lepas" style="padding:6px 10px;font-size:11px;width:auto;min-width:72px;flex-shrink:0;" data-table-id="' + escapeHtmlAttr(id) + '" data-table-label="' + escapeHtmlAttr(name) + '">Lepas</button>')
                     : '';
                 return (
                     '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:8px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.04);">' +
@@ -1413,10 +1413,12 @@
                     }
                     else {
                         // If payment confirm failed because seat is occupied, guide admin to change seat first.
-                        if (type === 'payment' && status === 'Paid' && (res.msg || '').toLowerCase().includes('seat')) {
+                        var msgL = (res.msg || '').toLowerCase();
+                        var seatRelated = msgL.indexOf('seat') >= 0 || msgL.indexOf('meja') >= 0 || msgL.indexOf('kursi') >= 0;
+                        if (type === 'payment' && status === 'Paid' && seatRelated) {
                             autoConfirmPaymentOrderId = orderId;
                             changeSeat(orderId);
-                            $('#seat-change-error').show().text((res.msg || 'Kursi tidak tersedia.') + ' Silakan ubah kursi, lalu pembayaran akan dikonfirmasi otomatis.');
+                            $('#seat-change-error').show().text((res.msg || 'Meja tidak tersedia.') + ' Ubah kursi lalu simpan — konfirmasi pembayaran akan diulang otomatis.');
                             return;
                         }
                         alert('Error: ' + (res.msg || 'Terjadi kesalahan'));
@@ -1591,6 +1593,10 @@
                     } else {
                         alert('Error: ' + (res.msg || 'Terjadi kesalahan'));
                     }
+                },
+                error: function(xhr) {
+                    const msg = (xhr.responseJSON && xhr.responseJSON.msg) ? xhr.responseJSON.msg : 'Tidak dapat menghubungi server.';
+                    alert('Gagal melepas meja: ' + msg);
                 }
             });
         }
@@ -1710,6 +1716,14 @@
                 const col = $(this).attr('data-col');
                 if (col) {
                     setColumnCardsMinimized(col, true);
+                }
+            });
+            $(document).on('click', '.js-seat-panel-lepas', function(e) {
+                e.preventDefault();
+                const tid = $(this).attr('data-table-id');
+                const tlabel = $(this).attr('data-table-label') || '';
+                if (tid) {
+                    releaseSingleTable(tid, tlabel);
                 }
             });
             $(document).on('click', '#seat-change-pick-wrap .seat-change-pick-chip', function(e) {

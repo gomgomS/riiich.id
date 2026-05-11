@@ -318,7 +318,7 @@
 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         <h2 class="text-4xl md:text-5xl font-playfair font-bold text-white mb-4">Pesan di Renrich</h2>
-        <p class="text-blue-100 text-lg max-w-2xl mx-auto font-light">Sudah di meja, bawa pulang, atau reservasi online sebelum datang — semua lewat formulir ini.</p>
+        <p class="text-blue-100 text-lg max-w-2xl mx-auto font-light">Sudah di meja atau reservasi online sebelum datang — semua lewat formulir ini.</p>
     </div>
 </div>
 
@@ -398,23 +398,14 @@
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Cara pesan <span
                                 class="text-red-500">*</span></label>
                         <input type="hidden" id="res-type" value="Dine-In">
-                        <div class="space-y-3">
+                        <div class="space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
                             <button type="button" class="res-flow-card--selectable p-4 rounded-xl border-2 border-[#033187] bg-blue-50/50 shadow-sm" data-flow="Dine-In" onclick="selectFlowType('Dine-In')">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <div class="font-bold text-gray-900">Sudah di meja <span class="text-[#033187]">(Dine-In)</span></div>
-                                        <p class="text-xs text-gray-600 mt-1.5 leading-relaxed">Anda sudah di kafe: pilih lokasi meja di denah, pre-order menu. <strong>Pembayaran di meja</strong> — waiter akan mendatangi Anda.</p>
+                                        <p class="text-xs text-gray-600 mt-1.5 leading-relaxed">Anda sudah di kafe: pilih lokasi meja di denah, lalu pre-order. <strong>Cocok untuk pesan tambahan atau pesan ulang</strong> dari meja yang sama tanpa antre. <strong>Pembayaran di meja</strong> — waiter akan mendatangi Anda.</p>
                                     </div>
                                     <span class="text-xl shrink-0 leading-none" aria-hidden="true">🍽️</span>
-                                </div>
-                            </button>
-                            <button type="button" class="res-flow-card--selectable p-4 rounded-xl border-2 border-gray-200 bg-white shadow-sm" data-flow="Takeaway" onclick="selectFlowType('Takeaway')">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <div class="font-bold text-gray-900">Bawa pulang <span class="text-[#033187]">(Takeaway)</span></div>
-                                        <p class="text-xs text-gray-600 mt-1.5 leading-relaxed">Tanpa memilih meja di denah — isi perkiraan waktu ambil, lalu pre-order.</p>
-                                    </div>
-                                    <span class="text-xl shrink-0 leading-none" aria-hidden="true">🛍️</span>
                                 </div>
                             </button>
                             <button type="button" class="res-flow-card--selectable p-4 rounded-xl border-2 border-gray-200 bg-white shadow-sm" data-flow="Reservation" onclick="selectFlowType('Reservation')">
@@ -444,7 +435,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
                     <div>
                         <h3 id="step-2-title" class="text-2xl font-bold text-gray-800 font-playfair">Lokasi meja</h3>
-                        <p id="step-2-lead" class="text-sm text-gray-500 mt-1">Pilih meja di denah. Pembayaran dilakukan di meja bersama waiter.</p>
+                        <p id="step-2-lead" class="text-sm text-gray-500 mt-1">Pilih meja di denah. Cocok untuk pesan ulang atau nambah menu dari meja yang sama. Pembayaran di meja bersama waiter.</p>
                     </div>
                 </div>
 
@@ -865,6 +856,9 @@
         svgEl.style.display = 'block';
         emptyState.style.display = 'none';
 
+        const flowForMap = String($('#res-type').val() || reservationData.flow_type || 'Dine-In');
+        const dineInTreatAllOpen = flowForMap === 'Dine-In';
+
         // Track bounding box across all content
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
@@ -936,9 +930,11 @@
                 g.setAttribute('id', table.id);
                 g.setAttribute('transform', `translate(${table.cx}, ${table.cy})`);
 
+                const rawStatus = table.status || 'Available';
+                const effectiveStatus = dineInTreatAllOpen ? 'Available' : rawStatus;
                 let statusClass = 'table-available';
-                if (table.status === 'Reserved') statusClass = 'table-reserved';
-                if (table.status === 'Occupied') statusClass = 'table-occupied';
+                if (effectiveStatus === 'Reserved') statusClass = 'table-reserved';
+                if (effectiveStatus === 'Occupied') statusClass = 'table-occupied';
 
                 g.setAttribute('class', `table-node ${statusClass}`);
 
@@ -993,8 +989,10 @@
 
                 // Multi-select toggle click
                 $(g).click(function () {
-                    if (statusClass !== 'table-available') {
-                        alert('This table is not available.');
+                    const flowClick = String($('#res-type').val() || reservationData.flow_type || 'Dine-In');
+                    const canPick = flowClick === 'Dine-In' || statusClass === 'table-available';
+                    if (!canPick) {
+                        alert('Meja ini tidak tersedia.');
                         return;
                     }
                     const idx = reservationData.table_ids.indexOf(table.id);
@@ -1045,8 +1043,10 @@
         if (hasTables) {
             let cntAvail = 0, cntReserved = 0, cntOccupied = 0;
             floorPlanData.tables.forEach(t => {
-                if (t.status === 'Reserved') cntReserved++;
-                else if (t.status === 'Occupied') cntOccupied++;
+                const raw = t.status || 'Available';
+                const eff = dineInTreatAllOpen ? 'Available' : raw;
+                if (eff === 'Reserved') cntReserved++;
+                else if (eff === 'Occupied') cntOccupied++;
                 else cntAvail++;
             });
             document.getElementById('cap-available').textContent = cntAvail;
@@ -1306,29 +1306,23 @@
         const $menuHint = $('#res-dinein-menu-hint');
         if (v === 'Dine-In') {
             $title.text('Lokasi meja');
-            $lead.text('Pilih meja di denah. Pembayaran dilakukan di meja bersama waiter.');
+            $lead.text('Pilih meja di denah. Cocok untuk pesan ulang atau nambah menu dari meja yang sama. Pembayaran di meja bersama waiter.');
             $menuHint.removeClass('hidden');
             $secLab.text('kedatangan / pengambilan');
             $('input[name="seat-mode"][value="choose"]').prop('checked', true);
-        } else if (v === 'Reservation') {
+        } else {
             $title.text('Meja & waktu kedatangan');
             $lead.text('Isi perkiraan waktu Anda tiba, lalu pilih meja di denah (atau bebas seat).');
             $menuHint.addClass('hidden');
             $secLab.text('kedatangan');
-        } else {
-            $title.text('Waktu & lokasi');
-            $lead.text('Isi perkiraan waktu ambil. Peta meja opsional.');
-            $menuHint.addClass('hidden');
-            $secLab.text('pengambilan');
         }
         updateSeatChoiceMode();
+        renderMap();
     }
 
     function selectFlowType(flow) {
         let v = 'Dine-In';
-        if (flow === 'Takeaway') {
-            v = 'Takeaway';
-        } else if (flow === 'Reservation') {
+        if (flow === 'Reservation') {
             v = 'Reservation';
         } else {
             v = 'Dine-In';
@@ -1342,9 +1336,7 @@
         });
         const $next = $('#res-step1-next-btn');
         if ($next.length) {
-            if (v === 'Takeaway') {
-                $next.html('Lanjut ke waktu &amp; menu &rarr;');
-            } else if (v === 'Reservation') {
+            if (v === 'Reservation') {
                 $next.html('Lanjut ke meja &amp; waktu &rarr;');
             } else {
                 $next.html('Lanjut ke pilih meja &rarr;');
@@ -1360,7 +1352,6 @@
 
     $(document).ready(function () {
         selectFlowType('Dine-In');
-        renderMap();
         initArrivalDatePicker();
         initArrivalTimePicker();
         updateSeatChoiceMode();
@@ -1544,9 +1535,7 @@
                 const arrivalMinute = timeMatch ? timeMatch[2] : '';
 
                 if (!arrivalDate || !arrivalHour || !arrivalMinute) {
-                    alert(flow === 'Takeaway'
-                        ? 'Mohon pilih perkiraan waktu pengambilan di Langkah 2.'
-                        : 'Mohon pilih perkiraan waktu kedatangan di Langkah 2.');
+                    alert('Mohon pilih perkiraan waktu kedatangan di Langkah 2.');
                     return;
                 }
                 const parsedArrival = parseArrivalInput(arrivalDate, arrivalHour, arrivalMinute);
@@ -1594,9 +1583,6 @@
     }
 
     function prevStep(step) {
-        if (step === 2 && reservationData.flow_type === 'Takeaway') {
-            step = 1; // skip table selection backward
-        }
         $('.step-content').removeClass('active');
         $(`#step-${step}`).addClass('active');
 
@@ -1668,9 +1654,7 @@
         $('#rev-wa').text(reservationData.contact.whatsapp);
         const flow = reservationData.flow_type || String($('#res-type').val() || 'Dine-In');
         let typeLabel = 'Sudah di meja (Dine-In)';
-        if (flow === 'Takeaway') {
-            typeLabel = 'Bawa pulang (Takeaway)';
-        } else if (flow === 'Reservation') {
+        if (flow === 'Reservation') {
             typeLabel = 'Reservasi online';
         }
         $('#rev-type').text(typeLabel);
@@ -1680,7 +1664,7 @@
             $('#rev-arrival').text('Sudah datang');
             $('#rev-table-label').text('Lokasi meja');
         } else {
-            $('#rev-arrival-label').text(flow === 'Takeaway' ? 'Perkiraan pengambilan' : 'Waktu kedatangan');
+            $('#rev-arrival-label').text('Waktu kedatangan');
             $('#rev-arrival').text(formatWib24(reservationData.arrival_time));
             $('#rev-table-label').text('Meja / lokasi');
         }
@@ -1702,9 +1686,7 @@
             ).join('');
             $('#rev-table').html(chips);
         } else {
-            $('#rev-table').html(flow === 'Takeaway'
-                ? '<span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">Tanpa meja (takeaway)</span>'
-                : '<span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">—</span>');
+            $('#rev-table').html('<span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">—</span>');
         }
 
         // Extra seats request
