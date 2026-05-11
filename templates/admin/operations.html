@@ -80,6 +80,194 @@
                 display: none !important;
             }
         }
+
+        .order-card-kanban-btn {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #374151;
+            cursor: pointer;
+            line-height: 0;
+        }
+        .order-card-kanban-btn:hover:not(:disabled) {
+            border-color: #033187;
+            color: #033187;
+            background: #eff6ff;
+        }
+        .order-card-kanban-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .seat-change-pick-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            line-height: 1.2;
+            text-align: left;
+            max-width: 100%;
+        }
+        .seat-change-pick-chip:hover:not(:disabled) {
+            border-color: #033187;
+            color: #033187;
+            background: #eff6ff;
+        }
+        .seat-change-pick-chip--selected {
+            border-color: #033187;
+            background: #033187;
+            color: #fff;
+        }
+        .seat-change-pick-chip--selected:hover:not(:disabled) {
+            background: #02308e;
+            border-color: #02308e;
+            color: #fff;
+        }
+        .seat-change-pick-chip:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        /* Lepas button styles (used in right seat drawer) */
+        .reserved-table-chip {
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 8px;
+            max-width: 100%;
+            box-sizing: border-box;
+            background: #fff;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 999px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+        .reserved-table-chip__label {
+            min-width: 0;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        .reserved-table-chip__btn {
+            flex-shrink: 0;
+            background: #ef4444;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            line-height: 1.2;
+        }
+        .reserved-table-chip__btn:hover {
+            background: #dc2626;
+        }
+        @media (max-width: 480px) {
+            .reserved-table-chip {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+                max-width: 100%;
+                border-radius: 12px;
+                padding: 8px 10px;
+            }
+            .reserved-table-chip__btn {
+                width: 100%;
+                text-align: center;
+                border-radius: 8px;
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* Right drawer: all seats (mirror left sidebar pattern) */
+        .seat-panel-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.45);
+            z-index: 55;
+        }
+        body.seat-panel-open .seat-panel-backdrop {
+            display: block;
+        }
+        .seat-side-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: min(100vw, 380px);
+            max-width: 100%;
+            background: #fff;
+            box-shadow: -8px 0 28px rgba(0, 0, 0, 0.12);
+            z-index: 56;
+            transform: translateX(100%);
+            transition: transform 0.22s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        body.seat-panel-open .seat-side-panel {
+            transform: translateX(0);
+        }
+        .seat-panel-tab {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 57;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 10px 6px;
+            width: 40px;
+            border: 1px solid #e5e7eb;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            background: #033187;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            line-height: 1.15;
+            cursor: pointer;
+            box-shadow: -2px 2px 12px rgba(3, 49, 135, 0.25);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .seat-panel-tab:hover {
+            background: #02308e;
+        }
+        body.seat-panel-open .seat-panel-tab {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .seat-panel-list-wrap {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-gray-100">
@@ -190,22 +378,6 @@
             </div>
         </header>
 
-        <!-- Reserved Tables Bar (always visible; chips area shows empty copy when none) -->
-        <div id="reserved-tables-bar" style="display:block;padding:10px 24px;background:#fffbeb;border-bottom:1px solid #fcd34d;">
-            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
-                <div style="display:flex;align-items:center;gap:6px;color:#b45309;font-weight:700;font-size:13px;flex-shrink:0;">
-                    <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Kursi Masih Terpesan:
-                </div>
-                <a href="/admin/seat-map-control" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #d1d5db;color:#033187;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;text-decoration:none;">
-                    Buka Kontrol Peta Kursi
-                </a>
-                <div id="reserved-chips" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;min-width:0;">
-                    <span style="font-size:12px;color:#78716c;font-weight:600;">semua kursi kosong/tidak terservasi</span>
-                </div>
-            </div>
-        </div>
-
         <!-- Kanban Board -->
         <div id="kanban-scroll-wrap" class="flex-1 overflow-x-auto overflow-y-hidden p-6">
             <div class="inline-flex gap-6 h-full min-w-max">
@@ -293,6 +465,23 @@
         </div>
     </main>
 
+    <!-- Right drawer: daftar semua kursi / meja -->
+    <div id="seat-panel-backdrop" class="seat-panel-backdrop" onclick="toggleSeatPanel(false)" aria-hidden="true"></div>
+    <button type="button" id="seat-panel-tab" class="seat-panel-tab" onclick="toggleSeatPanel(true)" aria-expanded="false" aria-controls="seat-side-panel" title="Buka daftar semua kursi">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+        <span style="writing-mode:vertical-rl;transform:rotate(180deg);max-height:7rem;">Kursi</span>
+    </button>
+    <aside id="seat-side-panel" class="seat-side-panel" role="dialog" aria-modal="true" aria-labelledby="seat-side-panel-title" aria-hidden="true">
+        <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-200 bg-gray-50 shrink-0">
+            <h2 id="seat-side-panel-title" class="text-sm font-bold text-gray-800 uppercase tracking-wide">Semua kursi</h2>
+            <button type="button" onclick="toggleSeatPanel(false)" class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100" title="Tutup" aria-label="Tutup panel kursi">&times;</button>
+        </div>
+        <div class="px-4 py-2 border-b border-gray-100 shrink-0">
+            <a href="/admin/seat-map-control" class="text-xs font-bold text-[#033187] hover:underline">Buka kontrol peta kursi &rarr;</a>
+        </div>
+        <div id="seat-panel-list" class="seat-panel-list-wrap px-3 py-3"></div>
+    </aside>
+
     <div id="seat-change-modal" style="display:none;position:fixed;inset:0;background:rgba(17,24,39,0.45);z-index:60;align-items:center;justify-content:center;padding:16px;">
         <div style="width:100%;max-width:480px;background:#fff;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.18);overflow:hidden;">
             <div style="padding:14px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
@@ -300,9 +489,9 @@
                 <button onclick="closeSeatModal()" style="background:transparent;border:none;color:#6b7280;font-size:20px;line-height:1;cursor:pointer;">&times;</button>
             </div>
             <div style="padding:16px;">
-                <div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Pilih meja</div>
-                <select id="seat-change-select" multiple size="8" style="width:100%;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font-size:14px;outline:none;background:#fff;"></select>
-                <p style="font-size:12px;color:#6b7280;margin-top:8px;">Tahan Ctrl/Cmd untuk memilih beberapa meja. Biarkan kosong jika ingin menghapus alokasi kursi.</p>
+                <div style="font-size:12px;color:#6b7280;margin-bottom:8px;">Pilih meja — klik untuk pilih / klik lagi untuk lepas</div>
+                <div id="seat-change-pick-wrap" style="display:flex;flex-wrap:wrap;gap:8px;max-height:min(50vh,280px);overflow-y:auto;padding:4px 2px 8px;"></div>
+                <p style="font-size:12px;color:#6b7280;margin-top:4px;">Beberapa meja: klik meja lain untuk menambah. Kosongkan semua pilihan lalu Simpan untuk menghapus alokasi kursi.</p>
                 <p id="seat-change-error" style="display:none;font-size:12px;color:#dc2626;margin-top:8px;"></p>
             </div>
             <div style="padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px;">
@@ -320,11 +509,12 @@
         let reservedByOrder = {};
         let tableStateMap = {};
         let seatModalOrderId = '';
+        let seatModalSelectedIds = [];
         let autoConfirmPaymentOrderId = '';
         let editModalOrderId = '';
         let editOrderMenusData = [];
         let editModalLegacyItems = [];
-        let minimizedOrderCardPkeys = new Set();
+        let expandedOrderCardPkeys = new Set();
 
         function parseArrivalDate(value) {
             if (!value) return null;
@@ -374,11 +564,99 @@
             return (found.display_name || found.label || found.id || tableId);
         }
 
-        function getReservedChipLabel(rec) {
-            const byFloorPlan = getTableDisplayLabel(rec.table_id || '');
-            if (byFloorPlan && byFloorPlan !== (rec.table_id || '')) return byFloorPlan;
-            if (rec.label && rec.label !== rec.table_id) return rec.label;
-            return rec.table_id || '-';
+        function toggleSeatPanel(forceState) {
+            const isOpen = document.body.classList.contains('seat-panel-open');
+            const next = typeof forceState === 'boolean' ? forceState : !isOpen;
+            document.body.classList.toggle('seat-panel-open', next);
+            const panel = document.getElementById('seat-side-panel');
+            const tab = document.getElementById('seat-panel-tab');
+            if (tab) {
+                tab.setAttribute('aria-expanded', next ? 'true' : 'false');
+            }
+            if (panel) {
+                panel.setAttribute('aria-hidden', next ? 'false' : 'true');
+            }
+            if (next) {
+                renderSeatPanelList();
+            }
+        }
+
+        function renderSeatPanelList() {
+            const el = document.getElementById('seat-panel-list');
+            if (!el) {
+                return;
+            }
+
+            const byId = {};
+            (floorPlanTables || []).forEach(function(t) {
+                if (t && t.id) {
+                    byId[t.id] = t;
+                }
+            });
+
+            const orphanIds = Object.keys(tableStateMap || {}).filter(function(id) {
+                return !byId[id];
+            });
+
+            if (!floorPlanTables.length && !orphanIds.length) {
+                el.innerHTML = '<p class="text-xs text-gray-500 leading-relaxed px-1">Belum ada meja di denah. Atur di <a href="/admin/floor_designer" class="font-bold text-[#033187] underline">Floor Designer</a>, lalu refresh halaman ini.</p>';
+                return;
+            }
+
+            function rowHtml(t) {
+                const id = t.id;
+                const name = getTableDisplayLabel(id);
+                const state = tableStateMap[id] || {};
+                const status = String(state.status || 'Available').trim() || 'Available';
+                const orderPk = String(state.order_pkey || reservedByOrder[id] || '').trim();
+                let badgeBg = '#dcfce7';
+                let badgeFg = '#166534';
+                let badgeText = 'Kosong';
+                if (status === 'Reserved') {
+                    badgeBg = '#fef3c7';
+                    badgeFg = '#92400e';
+                    badgeText = 'Dipesan';
+                } else if (status === 'Occupied') {
+                    badgeBg = '#dbeafe';
+                    badgeFg = '#1e40af';
+                    badgeText = 'Digunakan';
+                }
+                const showLepas = status !== 'Available';
+                const orderShort = orderPk
+                    ? ('<div style="font-size:10px;color:#6b7280;margin-top:4px;">Order <code style="font-size:10px;background:#f3f4f6;padding:2px 6px;border-radius:4px;">' + escapeHtml(orderPk.length > 18 ? orderPk.slice(0, 18) + '…' : orderPk) + '</code></div>')
+                    : '';
+                const lep = showLepas
+                    ? ('<button type="button" class="reserved-table-chip__btn" style="padding:6px 10px;font-size:11px;width:auto;min-width:72px;flex-shrink:0;" onclick="releaseSingleTable(' + JSON.stringify(id) + ', ' + JSON.stringify(name) + ')">Lepas</button>')
+                    : '';
+                return (
+                    '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:8px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.04);">' +
+                    '<div style="flex:1;min-width:140px;">' +
+                    '<div style="font-weight:700;color:#111827;font-size:13px;">' + escapeHtml(name) + '</div>' +
+                    '<div style="font-size:10px;color:#9ca3af;margin-top:2px;">ID: ' + escapeHtml(id) + '</div>' +
+                    orderShort +
+                    '</div>' +
+                    '<span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.03em;flex-shrink:0;background:' + badgeBg + ';color:' + badgeFg + ';">' + escapeHtml(badgeText) + '</span>' +
+                    lep +
+                    '</div>'
+                );
+            }
+
+            const rows = floorPlanTables.slice().sort(function(a, b) {
+                const la = String((a.display_name || a.label || a.id || '')).toLowerCase();
+                const lb = String((b.display_name || b.label || b.id || '')).toLowerCase();
+                return la.localeCompare(lb, 'id');
+            });
+
+            let html = rows.map(rowHtml).join('');
+
+            if (orphanIds.length) {
+                html += '<p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-4 mb-2 px-1">Meja di DB tanpa denah</p>';
+                orphanIds.sort().forEach(function(oid) {
+                    html += rowHtml({ id: oid, label: oid, display_name: oid });
+                });
+            }
+
+            el.innerHTML = html;
         }
 
         function toIdLabelPayment(v) {
@@ -431,6 +709,13 @@
                 .replace(/&/g, '&amp;')
                 .replace(/"/g, '&quot;')
                 .replace(/</g, '&lt;');
+        }
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
         }
 
         function loadEditOrderMenus(done) {
@@ -821,15 +1106,18 @@
                 let cardClass = 'reservation';
                 if (order.flow_type === 'Takeaway') { cardClass = 'takeaway'; }
                 if (order.flow_type === 'Dine-In') { cardClass = 'dinein'; }
+                if (order.flow_type === 'Reservation') { cardClass = 'reservation'; }
 
                 const guestNameEsc = $('<div/>').text(order.contact && order.contact.name ? order.contact.name : 'Tamu').html();
-                const flowLabelRaw = order.flow_type === 'Dine-In' ? 'Dine-In' : (order.flow_type === 'Takeaway' ? 'Takeaway' : (order.flow_type || '-'));
+                const flowLabelRaw = order.flow_type === 'Dine-In' ? 'Dine-In' : (order.flow_type === 'Takeaway' ? 'Takeaway' : (order.flow_type === 'Reservation' ? 'Reservation' : (order.flow_type || '-')));
                 const flowLabelEsc = $('<div/>').text(flowLabelRaw).html();
                 let flowTagClass = 'order-card-flow-tag--reservation';
                 if (order.flow_type === 'Dine-In') {
                     flowTagClass = 'order-card-flow-tag--dinein';
                 } else if (order.flow_type === 'Takeaway') {
                     flowTagClass = 'order-card-flow-tag--takeaway';
+                } else if (order.flow_type === 'Reservation') {
+                    flowTagClass = 'order-card-flow-tag--reservation';
                 }
                 let itemsHtml = '';
                 let itemsCompactHtml = '';
@@ -903,7 +1191,7 @@
                             `<svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg> Lepas Meja`);
                 }
 
-                if (order.flow_type === 'Dine-In' && order.fulfillment_status !== 'Served') {
+                if ((order.flow_type === 'Dine-In' || order.flow_type === 'Reservation') && order.fulfillment_status !== 'Served') {
                     actionHtml += btn('#6b7280','#fff','6px',`changeSeat('${order.pkey}')`,'Ubah Kursi');
                 }
 
@@ -913,7 +1201,7 @@
 
                 // Table display: support multi-table
                 const isFreeSeat = (order.seat_mode === 'free') || (
-                    order.flow_type === 'Dine-In' &&
+                    (order.flow_type === 'Dine-In' || order.flow_type === 'Reservation') &&
                     (!order.table_ids || order.table_ids.length === 0) &&
                     !order.table_id &&
                     !!order.seating_notes
@@ -931,18 +1219,35 @@
                 const countdownLabel = countdownToArrival(order.arrival_time || '');
                 const countdownColor = countdownLabel === '-' ? '#6b7280' : (countdownLabel === 'customer sampai' ? '#033187' : '#0f766e');
                 const totalRp = (Number(order.total_amount) || 0).toLocaleString('id-ID');
-                const isMin = minimizedOrderCardPkeys.has(order.pkey);
-                const minimizedClass = isMin ? ' order-card--minimized' : '';
+                const isExpanded = expandedOrderCardPkeys.has(order.pkey);
+                const minimizedClass = isExpanded ? '' : ' order-card--minimized';
 
                 const editOrderBtn = `<button type="button" class="js-edit-order-btn" data-order-pkey="${escapeHtmlAttr(order.pkey)}" style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:#fff;color:#033187;font-size:12px;font-weight:700;padding:8px 10px;border-radius:8px;border:1px solid #033187;cursor:pointer;">Edit transaksi</button>`;
 
+                let kanbanLane = '';
+                if (order.payment_status !== 'Paid') {
+                    kanbanLane = 'unpaid';
+                } else if (order.fulfillment_status === 'Pending') {
+                    kanbanLane = 'pending';
+                } else if (order.fulfillment_status === 'Preparing' || order.fulfillment_status === 'In Progress') {
+                    kanbanLane = 'preparing';
+                } else if (order.fulfillment_status === 'Served') {
+                    kanbanLane = 'served';
+                }
+                const navLeftDisabled = !kanbanLane || kanbanLane === 'unpaid';
+                const navRightDisabled = !kanbanLane || kanbanLane === 'served';
+                const kanbanLeftBtn = `<button type="button" class="order-card-kanban-btn" ${navLeftDisabled ? 'disabled' : ''} title="Kolom sebelumnya" aria-label="Pindah ke kolom sebelumnya" onclick="directKanbanMove('${order.pkey}',-1)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>`;
+                const kanbanRightBtn = `<button type="button" class="order-card-kanban-btn" ${navRightDisabled ? 'disabled' : ''} title="Kolom berikutnya" aria-label="Pindah ke kolom berikutnya" onclick="directKanbanMove('${order.pkey}',1)"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>`;
+
                 const cardHtml = `
                     <div class="order-card ${cardClass}${minimizedClass}" data-order-pkey="${escapeHtmlAttr(order.pkey)}">
-                        <div class="order-card-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f3f4f6;">
-                            <div style="font-weight:700;color:#1f2937;font-size:15px;line-height:1.25;flex:1;min-width:0;padding-right:4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;">
+                        <div class="order-card-header" style="display:flex;justify-content:flex-start;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f3f4f6;">
+                            ${kanbanLeftBtn}
+                            <div style="font-weight:700;color:#1f2937;font-size:15px;line-height:1.25;flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;">
                                 <span>${guestNameEsc}</span>
                                 <span class="order-card-flow-tag ${flowTagClass}">${flowLabelEsc}</span>
                             </div>
+                            ${kanbanRightBtn}
                             <button type="button" class="js-toggle-card-expand" data-order-pkey="${escapeHtmlAttr(order.pkey)}" title="Ciutkan / lebarkan kartu" aria-label="Ciutkan atau lebarkan detail kartu" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:34px;height:34px;color:#033187;background:#eff6ff;border:1px solid #bfdbfe;padding:0;border-radius:8px;cursor:pointer;line-height:0;">
                                 <span class="order-card-toggle-icon order-card-toggle-icon--collapse" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></span>
                                 <span class="order-card-toggle-icon order-card-toggle-icon--expand" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></span>
@@ -985,9 +1290,9 @@
                 $(targetCol).append(cardHtml);
             });
 
-            for (const pk of Array.from(minimizedOrderCardPkeys)) {
+            for (const pk of Array.from(expandedOrderCardPkeys)) {
                 if (!renderedPkeys.has(pk)) {
-                    minimizedOrderCardPkeys.delete(pk);
+                    expandedOrderCardPkeys.delete(pk);
                 }
             }
 
@@ -1019,7 +1324,80 @@
                 if (typeof onDone === 'function') {
                     onDone();
                 }
+                renderSeatPanelList();
+            }).fail(function() {
+                floorPlanTables = [];
+                if (typeof onDone === 'function') {
+                    onDone();
+                }
+                renderSeatPanelList();
             });
+        }
+
+        function kanbanLaneForOrder(o) {
+            if (!o) {
+                return '';
+            }
+            if (o.payment_status !== 'Paid') {
+                return 'unpaid';
+            }
+            if (o.fulfillment_status === 'Pending') {
+                return 'pending';
+            }
+            if (o.fulfillment_status === 'Preparing' || o.fulfillment_status === 'In Progress') {
+                return 'preparing';
+            }
+            if (o.fulfillment_status === 'Served') {
+                return 'served';
+            }
+            return '';
+        }
+
+        function directKanbanMove(orderId, dir) {
+            const o = orderIndex[orderId];
+            const lane = kanbanLaneForOrder(o);
+            if (!lane) {
+                return;
+            }
+            if (dir < 0) {
+                if (lane === 'unpaid') {
+                    return;
+                }
+                if (lane === 'pending') {
+                    if (!confirm('Kembalikan ke Verifikasi Pembayaran (belum lunas)? Kursi yang terikat akan dilepas.')) {
+                        return;
+                    }
+                    updateStatus(orderId, 'payment', 'Unpaid');
+                    return;
+                }
+                if (lane === 'preparing') {
+                    updateStatus(orderId, 'fulfillment', 'Pending');
+                    return;
+                }
+                if (lane === 'served') {
+                    if (!confirm('Kembalikan ke kolom Siap Disajikan (Preparing)?')) {
+                        return;
+                    }
+                    updateStatus(orderId, 'fulfillment', 'Preparing');
+                    return;
+                }
+            } else {
+                if (lane === 'served') {
+                    return;
+                }
+                if (lane === 'unpaid') {
+                    updateStatus(orderId, 'payment', 'Paid');
+                    return;
+                }
+                if (lane === 'pending') {
+                    updateStatus(orderId, 'fulfillment', 'Preparing');
+                    return;
+                }
+                if (lane === 'preparing') {
+                    updateStatus(orderId, 'fulfillment', 'Served');
+                    return;
+                }
+            }
         }
 
         function updateStatus(orderId, type, status) {
@@ -1054,41 +1432,90 @@
                 return;
             }
             seatModalOrderId = orderId;
+            const cur = (order.table_ids && order.table_ids.length > 0)
+                ? order.table_ids
+                : (order.table_id ? [order.table_id] : []);
+            seatModalSelectedIds = cur.map(function (x) { return String(x).trim(); }).filter(function (x) { return x.length > 0; });
             renderSeatOptions(order);
             $('#seat-change-error').hide().text('');
             $('#seat-change-modal').css('display', 'flex');
         }
 
+        function isSeatModalPickBlocked(tableId, order) {
+            const tid = String(tableId || '').trim();
+            if (!tid || !order || !order.pkey) {
+                return true;
+            }
+            const occupiedBy = reservedByOrder[tid] || '';
+            const tableState = tableStateMap[tid] || {};
+            const blockedByOtherOrder = occupiedBy && occupiedBy !== order.pkey;
+            const blockedByStatus = tableState.status && tableState.status !== 'Available' && tableState.order_pkey !== order.pkey;
+            return !!(blockedByOtherOrder || blockedByStatus);
+        }
+
+        function toggleSeatModalPick(tableId) {
+            if (!seatModalOrderId) {
+                return;
+            }
+            const order = orderIndex[seatModalOrderId] || {};
+            const tid = String(tableId || '').trim();
+            if (!tid) {
+                return;
+            }
+            const idx = seatModalSelectedIds.indexOf(tid);
+            if (idx >= 0) {
+                seatModalSelectedIds.splice(idx, 1);
+            } else {
+                if (isSeatModalPickBlocked(tid, order)) {
+                    return;
+                }
+                seatModalSelectedIds.push(tid);
+            }
+            renderSeatOptions(order);
+        }
+
         function renderSeatOptions(order) {
+            const wrap = $('#seat-change-pick-wrap');
+            wrap.empty();
+
             const currentSeats = (order.table_ids && order.table_ids.length > 0)
                 ? order.table_ids
                 : (order.table_id ? [order.table_id] : []);
-
-            const selectEl = $('#seat-change-select');
-            selectEl.empty();
-
             const fallback = currentSeats.filter(tid => !floorPlanTables.some(ft => ft.id === tid));
             const mergedTables = floorPlanTables.concat(fallback.map(tid => ({ id: tid, label: tid })));
 
             mergedTables.forEach(t => {
-                const occupiedBy = reservedByOrder[t.id] || '';
-                const tableState = tableStateMap[t.id] || {};
-                const selected = currentSeats.includes(t.id);
+                const tid = String(t.id || '').trim();
+                if (!tid) {
+                    return;
+                }
+                const occupiedBy = reservedByOrder[tid] || '';
+                const tableState = tableStateMap[tid] || {};
+                const selected = seatModalSelectedIds.indexOf(tid) >= 0;
                 const blockedByOtherOrder = occupiedBy && occupiedBy !== order.pkey;
                 const blockedByStatus = !selected && tableState.status && tableState.status !== 'Available' && tableState.order_pkey !== order.pkey;
                 const blocked = blockedByOtherOrder || blockedByStatus;
-                const statusLabel = blocked && tableState.status ? ` - ${String(tableState.status).toUpperCase()}` : (blocked ? ' - TIDAK TERSEDIA' : '');
-                const option = $('<option></option>')
-                    .val(t.id)
-                    .text(`${(t.display_name || t.label || t.id)} (${t.id})${statusLabel}`)
-                    .prop('selected', selected)
-                    .prop('disabled', blocked);
-                selectEl.append(option);
+                const label = (t.display_name || t.label || tid);
+                const extra = blocked && !selected
+                    ? (tableState.status ? ` (${String(tableState.status)})` : ' (tidak tersedia)')
+                    : '';
+                const $btn = $('<button type="button" class="seat-change-pick-chip"></button>')
+                    .attr('data-table-id', tid)
+                    .text(label + extra);
+                if (selected) {
+                    $btn.addClass('seat-change-pick-chip--selected');
+                }
+                if (blocked && !selected) {
+                    $btn.prop('disabled', true);
+                }
+                wrap.append($btn);
             });
         }
 
         function closeSeatModal() {
             seatModalOrderId = '';
+            seatModalSelectedIds = [];
+            $('#seat-change-pick-wrap').empty();
             $('#seat-change-modal').hide();
             $('#seat-change-error').hide().text('');
             $('#seat-change-save-btn').prop('disabled', false).text('Simpan');
@@ -1096,7 +1523,7 @@
 
         function submitSeatChange() {
             if (!seatModalOrderId) return;
-            const tableIds = ($('#seat-change-select').val() || []).map(v => String(v).trim()).filter(v => v.length > 0);
+            const tableIds = (seatModalSelectedIds || []).map(function (v) { return String(v).trim(); }).filter(function (v) { return v.length > 0; });
 
             $('#seat-change-save-btn').prop('disabled', true).text('Menyimpan...');
             $('#seat-change-error').hide().text('');
@@ -1131,13 +1558,10 @@
 
         function fetchReservedTables() {
             $.get('/admin/api/tables/reserved', function(res) {
-                const bar   = document.getElementById('reserved-tables-bar');
-                const chips = document.getElementById('reserved-chips');
                 reservedByOrder = {};
                 tableStateMap = {};
-                if(!res.ok || !res.data || res.data.length === 0) {
-                    bar.style.display = 'block';
-                    chips.innerHTML = '<span style="font-size:12px;color:#78716c;font-weight:600;">semua kursi kosong/tidak terservasi</span>';
+                if (!res.ok || !res.data || res.data.length === 0) {
+                    renderSeatPanelList();
                     return;
                 }
                 res.data.forEach(t => {
@@ -1147,16 +1571,7 @@
                         order_pkey: t.order_pkey || ''
                     };
                 });
-                bar.style.display = 'block';
-                chips.innerHTML = res.data.map(t => `
-                    <span style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #fcd34d;color:#92400e;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;box-shadow:0 1px 2px rgba(0,0,0,.06);">
-                        &#128681; ${getReservedChipLabel(t)}
-                        <button onclick='releaseSingleTable(${JSON.stringify(t.table_id)}, ${JSON.stringify(getReservedChipLabel(t))})'
-                            style="margin-left:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;border:none;cursor:pointer;"
-                            onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
-                            Lepas
-                        </button>
-                    </span>`).join('');
+                renderSeatPanelList();
             });
         }
 
@@ -1250,10 +1665,10 @@
                     return;
                 }
                 if (minimized) {
-                    minimizedOrderCardPkeys.add(pk);
+                    expandedOrderCardPkeys.delete(pk);
                     $(this).addClass('order-card--minimized');
                 } else {
-                    minimizedOrderCardPkeys.delete(pk);
+                    expandedOrderCardPkeys.add(pk);
                     $(this).removeClass('order-card--minimized');
                 }
             });
@@ -1277,10 +1692,10 @@
                 const $card = $(this).closest('.order-card');
                 if ($card.hasClass('order-card--minimized')) {
                     $card.removeClass('order-card--minimized');
-                    minimizedOrderCardPkeys.delete(pk);
+                    expandedOrderCardPkeys.add(pk);
                 } else {
                     $card.addClass('order-card--minimized');
-                    minimizedOrderCardPkeys.add(pk);
+                    expandedOrderCardPkeys.delete(pk);
                 }
             });
             $(document).on('click', '.js-col-expand-all', function(e) {
@@ -1297,8 +1712,23 @@
                     setColumnCardsMinimized(col, true);
                 }
             });
+            $(document).on('click', '#seat-change-pick-wrap .seat-change-pick-chip', function(e) {
+                e.preventDefault();
+                if ($(this).prop('disabled')) {
+                    return;
+                }
+                const tid = $(this).attr('data-table-id');
+                if (tid) {
+                    toggleSeatModalPick(tid);
+                }
+            });
             window.addEventListener('resize', function() {
                 initSidebarState();
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.body.classList.contains('seat-panel-open')) {
+                    toggleSeatPanel(false);
+                }
             });
             fetchFloorPlanTables(function() {
                 fetchOrders();

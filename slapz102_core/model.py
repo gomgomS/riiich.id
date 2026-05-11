@@ -123,7 +123,7 @@ db = {
 
     # Cafe reservations & orders
     "db_order" : {
-        "flow_type"          : "",   # Dine-In | Takeaway
+        "flow_type"          : "",   # Dine-In | Takeaway | Reservation
         "contact"            : {},   # {name, whatsapp}
         "table_ids"          : [],   # list of reserved table IDs
         "table_id"           : "",   # kept for legacy single-table compat

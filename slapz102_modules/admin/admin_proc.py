@@ -364,6 +364,23 @@ def update_order_status(order_id, update_type, new_status):
                         )
                     return {"ok": False, "msg": f"Seat {tid} is no longer available. Please refresh and choose another seat."}
                 locked_ids.append(tid)
+            # end for
+
+        # Revert ke Belum Bayar: lepas kursi yang terikat order ini (agar meja kembali Available)
+        if update_type == "payment" and new_status == "Unpaid":
+            order_un = db["db_order"].find_one({"pkey": order_id})
+            if order_un:
+                table_ids_un = order_un.get("table_ids", [])
+                if not table_ids_un and order_un.get("table_id"):
+                    table_ids_un = [order_un["table_id"]]
+                if table_ids_un:
+                    db["db_table"].update_many(
+                        {"table_id": {"$in": table_ids_un}, "order_pkey": order_id},
+                        {"$set": {"status": "Available", "order_pkey": "", "reserved_at": 0}}
+                    )
+                # end if
+            # end if
+        # end if
 
         db["db_order"].update_one(
             {"pkey": order_id},
@@ -496,7 +513,7 @@ def reset_all_tables():
         print(traceback.format_exc())
         return {"ok": False, "msg": "Database error"}
 
-def get_order_history(order_status="", payment_status=""):
+def get_order_history(order_status="", payment_status="", page=1, per_page=20):
     try:
         db = _get_db()
         query_filter = {}
@@ -507,10 +524,38 @@ def get_order_history(order_status="", payment_status=""):
         if payment_status and payment_status != "all":
             query_filter["payment_status"] = payment_status
 
+        try:
+            page_i = int(page)
+        except (TypeError, ValueError):
+            page_i = 1
+        if page_i < 1:
+            page_i = 1
+
+        try:
+            per_i = int(per_page)
+        except (TypeError, ValueError):
+            per_i = 20
+        if per_i < 5:
+            per_i = 5
+        if per_i > 100:
+            per_i = 100
+
+        total = db["db_order"].count_documents(query_filter)
+        total_pages = (total + per_i - 1) // per_i if per_i else 1
+        if total_pages < 1:
+            total_pages = 1
+        if total == 0:
+            page_i = 1
+        elif page_i > total_pages:
+            page_i = total_pages
+        skip_n = (page_i - 1) * per_i
+
         orders = list(
             db["db_order"]
             .find(query_filter)
             .sort("rec_timestamp", -1)
+            .skip(skip_n)
+            .limit(per_i)
         )
 
         for row in orders:
@@ -523,10 +568,25 @@ def get_order_history(order_status="", payment_status=""):
             else:
                 row["created_time_str"] = "-"
 
-        return {"ok": True, "data": orders}
+        return {
+            "ok": True,
+            "data": orders,
+            "total": total,
+            "page": page_i,
+            "per_page": per_i,
+            "total_pages": total_pages,
+        }
     except Exception:
         print(traceback.format_exc())
-        return {"ok": False, "data": [], "msg": "Database error"}
+        return {
+            "ok": False,
+            "data": [],
+            "total": 0,
+            "page": 1,
+            "per_page": 20,
+            "total_pages": 1,
+            "msg": "Database error",
+        }
 
 def set_table_status(table_id, new_status):
     try:

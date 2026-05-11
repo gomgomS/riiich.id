@@ -117,7 +117,15 @@ def operations_history():
 
         order_status = request.args.get("order_status", "all")
         payment_status = request.args.get("payment_status", "all")
-        return view_admin.html_operations_history(order_status, payment_status)
+        try:
+            page = int(request.args.get("page", 1))
+        except (TypeError, ValueError):
+            page = 1
+        try:
+            per_page = int(request.args.get("per_page", 20))
+        except (TypeError, ValueError):
+            per_page = 20
+        return view_admin.html_operations_history(order_status, payment_status, page, per_page)
     except Exception:
         print(traceback.format_exc())
         return "An error occurred", 500
